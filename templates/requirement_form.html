@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">New ERP Requirement</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="requirementForm">
+                    <div class="mb-3">
+                        <label for="project_scope" class="form-label">Project Scope</label>
+                        <textarea class="form-control" id="project_scope" name="project_scope" rows="4" required></textarea>
+                        <div class="form-text">Provide a general description of what you need.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="customization_type" class="form-label">Customization Type</label>
+                        <select class="form-select" id="customization_type" name="customization_type" required>
+                            <option value="">Select type...</option>
+                            <option value="new_module">New Module</option>
+                            <option value="workflow_adjustment">Workflow Adjustment</option>
+                            <option value="report_customization">Report Customization</option>
+                            <option value="integration">Third-party Integration</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="modules_involved" class="form-label">Modules Involved</label>
+                        <input type="text" class="form-control" id="modules_involved" name="modules_involved" 
+                               placeholder="e.g., Sales, Inventory, CRM" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="functional_requirements" class="form-label">Functional Requirements</label>
+                        <textarea class="form-control" id="functional_requirements" name="functional_requirements" 
+                                  rows="6" required></textarea>
+                        <div class="form-text">Describe specific features or processes you want.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="technical_constraints" class="form-label">Technical Constraints</label>
+                        <textarea class="form-control" id="technical_constraints" name="technical_constraints" 
+                                  rows="4"></textarea>
+                        <div class="form-text">Any technical restrictions or requirements.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="preferred_timeline" class="form-label">Preferred Timeline</label>
+                        <input type="text" class="form-control" id="preferred_timeline" name="preferred_timeline" 
+                               placeholder="e.g., 3 months">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Submit Requirement</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/form_handler.js') }}"></script>
+{% endblock %}

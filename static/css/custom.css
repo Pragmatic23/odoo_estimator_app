@@ -1,0 +1,41 @@
+.implementation-plan {
+    white-space: pre-line;
+    font-family: var(--bs-font-monospace);
+    padding: 1rem;
+    background-color: var(--bs-dark);
+    border-radius: 0.375rem;
+}
+
+.card {
+    margin-bottom: 1.5rem;
+}
+
+/* Print styles */
+@media print {
+    .navbar,
+    .btn {
+        display: none !important;
+    }
+    
+    .card {
+        border: none !important;
+    }
+    
+    .implementation-plan {
+        background-color: transparent !important;
+        padding: 0 !important;
+    }
+}
+
+/* Form validation styles */
+.is-invalid {
+    border-color: var(--bs-danger) !important;
+}
+
+.implementation-plan h1,
+.implementation-plan h2,
+.implementation-plan h3 {
+    color: var(--bs-primary);
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+}

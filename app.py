@@ -1,0 +1,114 @@
+import os
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy.orm import DeclarativeBase
+from requirements_analyzer import analyze_requirements
+from plan_generator import generate_plan
+
+class Base(DeclarativeBase):
+    pass
+
+db = SQLAlchemy(model_class=Base)
+app = Flask(__name__)
+app.secret_key = os.environ.get("FLASK_SECRET_KEY") or "a secret key"
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+    "pool_recycle": 300,
+    "pool_pre_ping": True,
+}
+
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+
+db.init_app(app)
+
+@login_manager.user_loader
+def load_user(user_id):
+    from models import User
+    return User.query.get(int(user_id))
+
+@app.route('/')
+def index():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    return redirect(url_for('login'))
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    from models import User
+    if request.method == 'POST':
+        user = User.query.filter_by(email=request.form['email']).first()
+        if user and check_password_hash(user.password_hash, request.form['password']):
+            login_user(user)
+            return redirect(url_for('dashboard'))
+        flash('Invalid credentials')
+    return render_template('login.html')
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    from models import User
+    if request.method == 'POST':
+        if User.query.filter_by(email=request.form['email']).first():
+            flash('Email already registered')
+            return redirect(url_for('register'))
+        
+        user = User(
+            username=request.form['username'],
+            email=request.form['email'],
+            password_hash=generate_password_hash(request.form['password'])
+        )
+        db.session.add(user)
+        db.session.commit()
+        login_user(user)
+        return redirect(url_for('dashboard'))
+    return render_template('register.html')
+
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    from models import Requirement
+    requirements = Requirement.query.filter_by(user_id=current_user.id).all()
+    return render_template('dashboard.html', requirements=requirements)
+
+@app.route('/requirement/new', methods=['GET', 'POST'])
+@login_required
+def new_requirement():
+    from models import Requirement
+    if request.method == 'POST':
+        requirement = Requirement(
+            user_id=current_user.id,
+            project_scope=request.form['project_scope'],
+            customization_type=request.form['customization_type'],
+            modules_involved=request.form['modules_involved'],
+            functional_requirements=request.form['functional_requirements'],
+            technical_constraints=request.form['technical_constraints'],
+            preferred_timeline=request.form['preferred_timeline']
+        )
+        db.session.add(requirement)
+        db.session.commit()
+        
+        # Analyze requirements and generate plan
+        analysis = analyze_requirements(requirement)
+        plan = generate_plan(analysis)
+        requirement.implementation_plan = plan
+        db.session.commit()
+        
+        return redirect(url_for('plan_review', req_id=requirement.id))
+    return render_template('requirement_form.html')
+
+@app.route('/plan/<int:req_id>')
+@login_required
+def plan_review(req_id):
+    from models import Requirement
+    requirement = Requirement.query.get_or_404(req_id)
+    if requirement.user_id != current_user.id:
+        flash('Unauthorized access')
+        return redirect(url_for('dashboard'))
+    return render_template('plan_review.html', requirement=requirement)
+
+with app.app_context():
+    import models
+    db.create_all()

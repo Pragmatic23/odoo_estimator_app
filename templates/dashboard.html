@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2>Welcome, {{ current_user.username }}</h2>
+        <a href="{{ url_for('new_requirement') }}" class="btn btn-primary">New Requirement</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Your Requirements</h3>
+            </div>
+            <div class="card-body">
+                {% if requirements %}
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Project Scope</th>
+                                    <th>Type</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for req in requirements %}
+                                <tr>
+                                    <td>{{ req.created_at.strftime('%Y-%m-%d') }}</td>
+                                    <td>{{ req.project_scope[:50] }}...</td>
+                                    <td>{{ req.customization_type }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if req.status == 'completed' else 'warning' }}">
+                                            {{ req.status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('plan_review', req_id=req.id) }}" class="btn btn-sm btn-info">
+                                            View Plan
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-center">No requirements submitted yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

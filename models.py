@@ -1,0 +1,23 @@
+from app import db
+from flask_login import UserMixin
+from datetime import datetime
+
+class User(UserMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(64), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password_hash = db.Column(db.String(256))
+    requirements = db.relationship('Requirement', backref='user', lazy=True)
+
+class Requirement(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    project_scope = db.Column(db.Text, nullable=False)
+    customization_type = db.Column(db.String(50), nullable=False)
+    modules_involved = db.Column(db.String(200), nullable=False)
+    functional_requirements = db.Column(db.Text, nullable=False)
+    technical_constraints = db.Column(db.Text)
+    preferred_timeline = db.Column(db.String(50))
+    implementation_plan = db.Column(db.Text)
+    status = db.Column(db.String(20), default='pending')
