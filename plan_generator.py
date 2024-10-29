@@ -36,7 +36,8 @@ def generate_plan(analysis):
         phase_end = current_date + timedelta(weeks=duration)
         phase_dates[phase] = {
             'start': current_date.strftime('%Y-%m-%d'),
-            'end': phase_end.strftime('%Y-%m-%d')
+            'end': phase_end.strftime('%Y-%m-%d'),
+            'duration': duration
         }
         current_date = phase_end
 
@@ -44,31 +45,30 @@ def generate_plan(analysis):
     
     # Project Overview with detailed timeline
     overview = [
-        f"Complexity Level: {analysis['complexity'].title()}",
-        f"Estimated Duration: {total_weeks} weeks",
-        f"Project Start Date: {start_date.strftime('%Y-%m-%d')}",
-        f"Project End Date: {current_date.strftime('%Y-%m-%d')}",
+        "# Project Overview",
+        f"Total Implementation Duration: {total_weeks} weeks",
+        f"Start Date: {start_date.strftime('%Y-%m-%d')}",
+        f"End Date: {current_date.strftime('%Y-%m-%d')}",
         "",
         "Core Modules:",
         *[f"- {module}" for module in analysis['modules']],
         "",
-        "Timeline Breakdown:"
+        "Phase Breakdown:"
     ]
     
-    for phase, dates in phase_dates.items():
-        overview.append(f"- {phase}")
-        overview.append(f"  Start: {dates['start']}")
-        overview.append(f"  End: {dates['end']}")
-        overview.append("")
+    for i, (phase, details) in enumerate(phase_dates.items(), 1):
+        overview.extend([
+            f"{i}. {phase} ({details['duration']} weeks)",
+            f"   - Start: {details['start']}",
+            f"   - End: {details['end']}",
+            ""
+        ])
         
-    plan_sections.append({
-        'title': 'Project Overview',
-        'content': '\n'.join(overview)
-    })
+    plan_sections.append('\n'.join(overview))
     
     # Implementation Phases with detailed steps
-    phases = []
-    for phase, dates in phase_dates.items():
+    phases = ["# Implementation Phases"]
+    for i, (phase, details) in enumerate(phase_dates.items(), 1):
         phase_content = []
         if phase == 'Initial Setup':
             phase_content = [
@@ -100,36 +100,31 @@ def generate_plan(analysis):
             ]
         
         phases.extend([
-            f"{phase} ({dates['start']} to {dates['end']})",
-            *phase_content,
+            f"{i}. {phase}",
+            f"   Duration: {details['duration']} weeks",
+            f"   Timeline: {details['start']} to {details['end']}",
+            "",
+            *[f"   {step}" for step in phase_content],
             ""
         ])
     
-    plan_sections.append({
-        'title': 'Implementation Phases',
-        'content': '\n'.join(phases)
-    })
+    plan_sections.append('\n'.join(phases))
     
     # Technical Requirements
     tech_requirements = [
+        "# Technical Requirements",
         "- Use only out-of-the-box Odoo features wherever possible",
         "- Standard Odoo workflow configurations",
         *[f"- {req}" for req in analysis['technical_requirements']]
     ]
     
-    plan_sections.append({
-        'title': 'Technical Requirements',
-        'content': '\n'.join(tech_requirements)
-    })
+    plan_sections.append('\n'.join(tech_requirements))
     
     # Risk Analysis
     risks = generate_risk_analysis(analysis)
-    plan_sections.append({
-        'title': 'Risk Analysis',
-        'content': risks
-    })
+    plan_sections.append(f"# Risk Analysis\n{risks}")
     
-    return '\n\n'.join([f"# {section['title']}\n{section['content']}" for section in plan_sections])
+    return '\n\n'.join(plan_sections)
 
 def generate_risk_analysis(analysis):
     """Generate risk analysis based on project complexity and requirements"""
