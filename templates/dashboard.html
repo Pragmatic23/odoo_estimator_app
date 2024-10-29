@@ -23,6 +23,7 @@
                                     <th>Date</th>
                                     <th>Project Scope</th>
                                     <th>Type</th>
+                                    <th>Progress</th>
                                     <th>Status</th>
                                     <th>Actions</th>
                                 </tr>
@@ -33,15 +34,25 @@
                                     <td>{{ req.created_at.strftime('%Y-%m-%d') }}</td>
                                     <td>{{ req.project_scope[:50] }}...</td>
                                     <td>{{ req.customization_type }}</td>
+                                    <td style="width: 150px;">
+                                        <div class="progress">
+                                            <div class="progress-bar" role="progressbar" 
+                                                 style="width: {{ req.overall_progress }}%;" 
+                                                 aria-valuenow="{{ req.overall_progress }}" 
+                                                 aria-valuemin="0" 
+                                                 aria-valuemax="100">
+                                                {{ req.overall_progress }}%
+                                            </div>
+                                        </div>
+                                    </td>
                                     <td>
-                                        <span class="badge bg-{{ 'success' if req.status == 'completed' else 'warning' }}">
+                                        <span class="badge rounded-pill bg-{{ 'success' if req.status == 'completed' else 'warning' if req.status == 'in_progress' else 'secondary' }}">
                                             {{ req.status }}
                                         </span>
                                     </td>
                                     <td>
-                                        <a href="{{ url_for('plan_review', req_id=req.id) }}" class="btn btn-sm btn-info">
-                                            View Plan
-                                        </a>
+                                        <a href="{{ url_for('plan_review', req_id=req.id) }}" 
+                                           class="btn btn-sm btn-info">View Plan</a>
                                     </td>
                                 </tr>
                                 {% endfor %}

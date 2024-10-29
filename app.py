@@ -6,6 +6,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.orm import DeclarativeBase
 from requirements_analyzer import analyze_requirements
 from plan_generator import generate_plan
+from datetime import datetime
 
 class Base(DeclarativeBase):
     pass
@@ -114,6 +115,39 @@ def plan_review(req_id):
         flash('Unauthorized access')
         return redirect(url_for('dashboard'))
     return render_template('plan_review.html', requirement=requirement)
+
+@app.route('/plan/<int:req_id>/progress', methods=['POST'])
+@login_required
+def update_progress(req_id):
+    from models import Requirement
+    requirement = Requirement.query.get_or_404(req_id)
+    if requirement.user_id != current_user.id:
+        flash('Unauthorized access')
+        return redirect(url_for('dashboard'))
+    
+    # Update phase progress
+    phase_progress = {}
+    for phase in ['initial_setup', 'development', 'testing', 'deployment']:
+        progress = int(request.form.get(phase, 0))
+        phase_progress[phase] = progress
+    
+    requirement.phase_progress = phase_progress
+    
+    # Calculate and update overall progress
+    requirement.overall_progress = sum(phase_progress.values()) // len(phase_progress)
+    requirement.last_updated = datetime.utcnow()
+    
+    # Update status based on progress
+    if requirement.overall_progress == 100:
+        requirement.status = 'completed'
+    elif requirement.overall_progress > 0:
+        requirement.status = 'in_progress'
+    else:
+        requirement.status = 'pending'
+    
+    db.session.commit()
+    flash('Progress updated successfully')
+    return redirect(url_for('plan_review', req_id=req_id))
 
 with app.app_context():
     import models

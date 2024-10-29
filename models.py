@@ -21,3 +21,12 @@ class Requirement(db.Model):
     preferred_timeline = db.Column(db.String(50))
     implementation_plan = db.Column(db.Text)
     status = db.Column(db.String(20), default='pending')
+    # New fields for progress tracking
+    overall_progress = db.Column(db.Integer, default=0)  # Percentage complete
+    phase_progress = db.Column(db.JSON, default=lambda: {
+        'initial_setup': 0,
+        'development': 0,
+        'testing': 0,
+        'deployment': 0
+    })
+    last_updated = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

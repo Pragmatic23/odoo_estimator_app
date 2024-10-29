@@ -5,7 +5,12 @@
     <div class="col">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>Implementation Plan</h2>
-            <button class="btn btn-primary" onclick="window.print()">Print Plan</button>
+            <div>
+                <button class="btn btn-primary me-2" onclick="window.print()">Print Plan</button>
+                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#progressModal">
+                    Update Progress
+                </button>
+            </div>
         </div>
 
         <div class="card mb-4">
@@ -17,6 +22,9 @@
                     <dt class="col-sm-3">Submission Date</dt>
                     <dd class="col-sm-9">{{ requirement.created_at.strftime('%Y-%m-%d') }}</dd>
 
+                    <dt class="col-sm-3">Last Updated</dt>
+                    <dd class="col-sm-9">{{ requirement.last_updated.strftime('%Y-%m-%d %H:%M UTC') }}</dd>
+
                     <dt class="col-sm-3">Project Scope</dt>
                     <dd class="col-sm-9">{{ requirement.project_scope }}</dd>
 
@@ -25,7 +33,42 @@
 
                     <dt class="col-sm-3">Modules Involved</dt>
                     <dd class="col-sm-9">{{ requirement.modules_involved }}</dd>
+
+                    <dt class="col-sm-3">Overall Progress</dt>
+                    <dd class="col-sm-9">
+                        <div class="progress" style="height: 20px;">
+                            <div class="progress-bar" role="progressbar" 
+                                 style="width: {{ requirement.overall_progress }}%;" 
+                                 aria-valuenow="{{ requirement.overall_progress }}" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="100">
+                                {{ requirement.overall_progress }}%
+                            </div>
+                        </div>
+                    </dd>
                 </dl>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Phase Progress</h4>
+            </div>
+            <div class="card-body">
+                {% for phase, progress in requirement.phase_progress.items() %}
+                <div class="mb-3">
+                    <label class="form-label">{{ phase.replace('_', ' ').title() }}</label>
+                    <div class="progress" style="height: 20px;">
+                        <div class="progress-bar" role="progressbar" 
+                             style="width: {{ progress }}%;" 
+                             aria-valuenow="{{ progress }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                            {{ progress }}%
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
             </div>
         </div>
 
@@ -39,4 +82,47 @@
         </div>
     </div>
 </div>
+
+<!-- Progress Update Modal -->
+<div class="modal fade" id="progressModal" tabindex="-1" aria-labelledby="progressModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="progressModalLabel">Update Progress</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('update_progress', req_id=requirement.id) }}" method="POST">
+                <div class="modal-body">
+                    {% for phase, progress in requirement.phase_progress.items() %}
+                    <div class="mb-3">
+                        <label class="form-label">{{ phase.replace('_', ' ').title() }}</label>
+                        <input type="range" class="form-range" 
+                               id="{{ phase }}" name="{{ phase }}" 
+                               value="{{ progress }}" min="0" max="100" step="5"
+                               oninput="this.nextElementSibling.value = this.value + '%'">
+                        <output>{{ progress }}%</output>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save Progress</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ranges = document.querySelectorAll('input[type="range"]');
+    ranges.forEach(range => {
+        range.addEventListener('input', function() {
+            this.nextElementSibling.value = this.value + '%';
+        });
+    });
+});
+</script>
 {% endblock %}
