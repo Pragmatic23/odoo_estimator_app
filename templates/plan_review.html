@@ -34,9 +34,7 @@
                 <h4>Implementation Plan</h4>
             </div>
             <div class="card-body">
-                <div class="implementation-plan">
-                    {{ requirement.implementation_plan | safe | replace('\n', '<br>') }}
-                </div>
+                <pre class="implementation-plan">{{ requirement.implementation_plan }}</pre>
             </div>
         </div>
     </div>
