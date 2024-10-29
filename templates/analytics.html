@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">Requirements Analytics Dashboard</h2>
+    
+    <div class="row">
+        <!-- Module Usage Chart -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Most Requested Modules</h4>
+                </div>
+                <div class="card-body">
+                    <canvas id="moduleChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Complexity Distribution -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Complexity Distribution</h4>
+                </div>
+                <div class="card-body">
+                    <canvas id="complexityChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Timeline Analysis -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Project Timeline Distribution</h4>
+                </div>
+                <div class="card-body">
+                    <canvas id="timelineChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Requirements Summary -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Requirements Overview</h4>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        <div class="list-group-item">
+                            <h5>Total Requirements</h5>
+                            <h3>{{ stats.total_requirements }}</h3>
+                        </div>
+                        <div class="list-group-item">
+                            <h5>Average Complexity</h5>
+                            <h3>{{ stats.avg_complexity }}</h3>
+                        </div>
+                        <div class="list-group-item">
+                            <h5>Most Common Type</h5>
+                            <h3>{{ stats.common_type }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Module Usage Chart
+    new Chart(document.getElementById('moduleChart'), {
+        type: 'bar',
+        data: {
+            labels: {{ module_stats.labels | tojson }},
+            datasets: [{
+                label: 'Usage Count',
+                data: {{ module_stats.values | tojson }},
+                backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+
+    // Complexity Distribution Chart
+    new Chart(document.getElementById('complexityChart'), {
+        type: 'pie',
+        data: {
+            labels: {{ complexity_stats.labels | tojson }},
+            datasets: [{
+                data: {{ complexity_stats.values | tojson }},
+                backgroundColor: [
+                    'rgba(75, 192, 192, 0.5)',
+                    'rgba(255, 206, 86, 0.5)',
+                    'rgba(255, 99, 132, 0.5)'
+                ],
+                borderColor: [
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(255, 206, 86, 1)',
+                    'rgba(255, 99, 132, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true
+        }
+    });
+
+    // Timeline Distribution Chart
+    new Chart(document.getElementById('timelineChart'), {
+        type: 'bar',
+        data: {
+            labels: {{ timeline_stats.labels | tojson }},
+            datasets: [{
+                label: 'Project Count',
+                data: {{ timeline_stats.values | tojson }},
+                backgroundColor: 'rgba(153, 102, 255, 0.5)',
+                borderColor: 'rgba(153, 102, 255, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

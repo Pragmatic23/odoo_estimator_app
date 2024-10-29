@@ -6,6 +6,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.orm import DeclarativeBase
 from requirements_analyzer import analyze_requirements
 from plan_generator import generate_plan
+from analytics import analyze_modules, analyze_complexity, analyze_timeline, get_requirements_stats
 from datetime import datetime
 
 class Base(DeclarativeBase):
@@ -79,6 +80,23 @@ def dashboard():
     from models import Requirement
     requirements = Requirement.query.filter_by(user_id=current_user.id).all()
     return render_template('dashboard.html', requirements=requirements)
+
+@app.route('/analytics')
+@login_required
+def analytics():
+    from models import Requirement
+    requirements = Requirement.query.all()  # Get all requirements for analysis
+    
+    module_stats = analyze_modules(requirements)
+    complexity_stats = analyze_complexity(requirements)
+    timeline_stats = analyze_timeline(requirements)
+    stats = get_requirements_stats(requirements)
+    
+    return render_template('analytics.html',
+                         module_stats=module_stats,
+                         complexity_stats=complexity_stats,
+                         timeline_stats=timeline_stats,
+                         stats=stats)
 
 @app.route('/requirement/new', methods=['GET', 'POST'])
 @login_required
