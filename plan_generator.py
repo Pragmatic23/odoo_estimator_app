@@ -1,7 +1,20 @@
-def generate_plan(analysis):
+from gpt_planner import generate_improved_plan
+from typing import Dict, Any
+
+def generate_plan(analysis: Dict[str, Any]) -> str:
     """
-    Generate implementation plan based on requirements analysis with updated specifications
+    Generate implementation plan based on requirements analysis using GPT
+    Falls back to basic plan generation if GPT generation fails
     """
+    try:
+        # Try generating plan using GPT
+        return generate_improved_plan(analysis)
+    except Exception as e:
+        print(f"Falling back to basic plan generation: {str(e)}")
+        return generate_basic_plan(analysis)
+
+def generate_basic_plan(analysis: Dict[str, Any]) -> str:
+    """Basic plan generation logic as fallback"""
     from datetime import datetime, timedelta
     
     # Calculate timeline details
@@ -126,7 +139,7 @@ def generate_plan(analysis):
     
     return '\n\n'.join(plan_sections)
 
-def generate_risk_analysis(analysis):
+def generate_risk_analysis(analysis: Dict[str, Any]) -> str:
     """Generate risk analysis based on project complexity and requirements"""
     risks = [
         "- Ensure all customizations stay within Odoo's standard feature set",
