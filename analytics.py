@@ -1,6 +1,5 @@
 from collections import Counter
 from typing import Dict, List, Any
-import re
 
 def analyze_modules(requirements: List[Any]) -> Dict:
     """Analyze module usage patterns"""
@@ -12,21 +11,24 @@ def analyze_modules(requirements: List[Any]) -> Dict:
     counter = Counter(all_modules)
     top_modules = dict(counter.most_common(5))
     
+    # Ensure we always return lists for JSON serialization
     return {
-        'labels': list(top_modules.keys()),
-        'values': list(top_modules.values())
+        'labels': list(top_modules.keys()) if top_modules else ['No data'],
+        'values': list(top_modules.values()) if top_modules else [0]
     }
 
 def analyze_complexity(requirements: List[Any]) -> Dict:
     """Analyze complexity distribution"""
-    complexity_counts = Counter(r.complexity for r in requirements)
+    complexity_counts = Counter(req.complexity for req in requirements)
+    values = [
+        complexity_counts.get('low', 0),
+        complexity_counts.get('medium', 0),
+        complexity_counts.get('high', 0)
+    ]
+    
     return {
         'labels': ['Low', 'Medium', 'High'],
-        'values': [
-            complexity_counts.get('low', 0),
-            complexity_counts.get('medium', 0),
-            complexity_counts.get('high', 0)
-        ]
+        'values': values if sum(values) > 0 else [0, 1, 0]  # Default to medium if no data
     }
 
 def analyze_timeline(requirements: List[Any]) -> Dict:
@@ -34,6 +36,7 @@ def analyze_timeline(requirements: List[Any]) -> Dict:
     def extract_months(timeline: str) -> int:
         if not timeline:
             return 0
+        import re
         match = re.search(r'(\d+)\s*(?:month|months|mo)', timeline.lower())
         return int(match.group(1)) if match else 0
     
@@ -54,7 +57,7 @@ def analyze_timeline(requirements: List[Any]) -> Dict:
     
     return {
         'labels': timeline_ranges,
-        'values': counts
+        'values': counts if sum(counts) > 0 else [0, 0, 0, 0]
     }
 
 def get_requirements_stats(requirements: List[Any]) -> Dict:
@@ -66,8 +69,9 @@ def get_requirements_stats(requirements: List[Any]) -> Dict:
             'common_type': 'N/A'
         }
     
+    # Calculate average complexity
     complexity_scores = {'low': 1, 'medium': 2, 'high': 3}
-    total_score = sum(complexity_scores.get(r.complexity, 0) for r in requirements)
+    total_score = sum(complexity_scores.get(req.complexity, 2) for req in requirements)  # Default to medium
     avg_score = total_score / len(requirements)
     
     if avg_score < 1.67:
@@ -77,7 +81,8 @@ def get_requirements_stats(requirements: List[Any]) -> Dict:
     else:
         avg_complexity = 'High'
     
-    type_counter = Counter(r.customization_type for r in requirements)
+    # Get most common type
+    type_counter = Counter(req.customization_type for req in requirements)
     common_type = type_counter.most_common(1)[0][0] if type_counter else 'N/A'
     
     return {
