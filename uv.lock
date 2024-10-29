@@ -654,6 +654,7 @@ dependencies = [
     { name = "flask-sqlalchemy" },
     { name = "psycopg2-binary" },
     { name = "spacy" },
+    { name = "werkzeug" },
 ]
 
 [package.metadata]
@@ -664,6 +665,7 @@ requires-dist = [
     { name = "flask-sqlalchemy", specifier = ">=3.1.1" },
     { name = "psycopg2-binary", specifier = ">=2.9.10" },
     { name = "spacy", specifier = ">=3.8.2" },
+    { name = "werkzeug" },
 ]
 
 [[package]]

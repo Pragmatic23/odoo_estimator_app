@@ -66,6 +66,12 @@ def register():
         return redirect(url_for('dashboard'))
     return render_template('register.html')
 
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('login'))
+
 @app.route('/dashboard')
 @login_required
 def dashboard():
