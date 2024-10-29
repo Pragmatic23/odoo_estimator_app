@@ -8,6 +8,7 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256))
     requirements = db.relationship('Requirement', backref='user', lazy=True)
+    comments = db.relationship('Comment', backref='author', lazy=True)
 
 class Requirement(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -30,3 +31,11 @@ class Requirement(db.Model):
         'deployment': 0
     })
     last_updated = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    comments = db.relationship('Comment', backref='requirement', lazy=True, cascade='all, delete-orphan')
+
+class Comment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    content = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    requirement_id = db.Column(db.Integer, db.ForeignKey('requirement.id'), nullable=False)

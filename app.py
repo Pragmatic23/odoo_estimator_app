@@ -103,7 +103,6 @@ def analytics():
 def new_requirement():
     from models import Requirement
     if request.method == 'POST':
-        # Create new requirement
         requirement = Requirement(
             user_id=current_user.id,
             project_scope=request.form['project_scope'],
@@ -114,9 +113,8 @@ def new_requirement():
             preferred_timeline=request.form['preferred_timeline']
         )
         
-        # Analyze requirements and generate plan
         analysis = analyze_requirements(requirement)
-        requirement.complexity = analysis['complexity']  # Set the complexity from analysis
+        requirement.complexity = analysis['complexity']
         plan = generate_plan(analysis)
         requirement.implementation_plan = plan
         
@@ -131,10 +129,28 @@ def new_requirement():
 def plan_review(req_id):
     from models import Requirement
     requirement = Requirement.query.get_or_404(req_id)
-    if requirement.user_id != current_user.id:
-        flash('Unauthorized access')
-        return redirect(url_for('dashboard'))
     return render_template('plan_review.html', requirement=requirement)
+
+@app.route('/plan/<int:req_id>/comment', methods=['POST'])
+@login_required
+def add_comment(req_id):
+    from models import Requirement, Comment
+    requirement = Requirement.query.get_or_404(req_id)
+    
+    if not request.form.get('content'):
+        flash('Comment cannot be empty')
+        return redirect(url_for('plan_review', req_id=req_id))
+        
+    comment = Comment(
+        content=request.form['content'],
+        user_id=current_user.id,
+        requirement_id=req_id
+    )
+    
+    db.session.add(comment)
+    db.session.commit()
+    flash('Comment added successfully')
+    return redirect(url_for('plan_review', req_id=req_id))
 
 @app.route('/plan/<int:req_id>/progress', methods=['POST'])
 @login_required
@@ -145,19 +161,15 @@ def update_progress(req_id):
         flash('Unauthorized access')
         return redirect(url_for('dashboard'))
     
-    # Update phase progress
     phase_progress = {}
     for phase in ['initial_setup', 'development', 'testing', 'deployment']:
         progress = int(request.form.get(phase, 0))
         phase_progress[phase] = progress
     
     requirement.phase_progress = phase_progress
-    
-    # Calculate and update overall progress
     requirement.overall_progress = sum(phase_progress.values()) // len(phase_progress)
     requirement.last_updated = datetime.utcnow()
     
-    # Update status based on progress
     if requirement.overall_progress == 100:
         requirement.status = 'completed'
     elif requirement.overall_progress > 0:
@@ -171,5 +183,4 @@ def update_progress(req_id):
 
 with app.app_context():
     import models
-    db.drop_all()  # This line will be removed after first run
     db.create_all()
