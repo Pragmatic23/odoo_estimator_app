@@ -103,6 +103,7 @@ def analytics():
 def new_requirement():
     from models import Requirement
     if request.method == 'POST':
+        # Create new requirement
         requirement = Requirement(
             user_id=current_user.id,
             project_scope=request.form['project_scope'],
@@ -112,13 +113,14 @@ def new_requirement():
             technical_constraints=request.form['technical_constraints'],
             preferred_timeline=request.form['preferred_timeline']
         )
-        db.session.add(requirement)
-        db.session.commit()
         
         # Analyze requirements and generate plan
         analysis = analyze_requirements(requirement)
+        requirement.complexity = analysis['complexity']  # Set the complexity from analysis
         plan = generate_plan(analysis)
         requirement.implementation_plan = plan
+        
+        db.session.add(requirement)
         db.session.commit()
         
         return redirect(url_for('plan_review', req_id=requirement.id))
@@ -169,4 +171,5 @@ def update_progress(req_id):
 
 with app.app_context():
     import models
+    db.drop_all()  # This line will be removed after first run
     db.create_all()
