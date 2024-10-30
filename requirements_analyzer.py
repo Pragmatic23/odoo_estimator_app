@@ -5,7 +5,6 @@ def analyze_requirements(requirement):
     analysis = {
         'modules': [],
         'complexity': 'medium',
-        'estimated_duration': '',
         'key_features': [],
         'technical_requirements': []
     }
@@ -23,10 +22,6 @@ def analyze_requirements(requirement):
         analysis['complexity'] = 'high'
     elif complexity_score < 1:
         analysis['complexity'] = 'low'
-        
-    # Extract timeline
-    if requirement.preferred_timeline:
-        analysis['estimated_duration'] = requirement.preferred_timeline
         
     # Extract key features from functional requirements
     sentences = requirement.functional_requirements.split('.')

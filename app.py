@@ -6,7 +6,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.orm import DeclarativeBase
 from requirements_analyzer import analyze_requirements
 from plan_generator import generate_plan
-from analytics import analyze_modules, analyze_complexity, analyze_timeline, get_requirements_stats
+from analytics import analyze_modules, analyze_complexity, get_requirements_stats
 from datetime import datetime
 from flask_wtf import FlaskForm, CSRFProtect
 from wtforms import StringField, TextAreaField, SelectField, validators
@@ -109,13 +109,11 @@ def analytics():
     
     module_stats = analyze_modules(requirements)
     complexity_stats = analyze_complexity(requirements)
-    timeline_stats = analyze_timeline(requirements)
     stats = get_requirements_stats(requirements)
     
     return render_template('analytics.html',
                          module_stats=module_stats,
                          complexity_stats=complexity_stats,
-                         timeline_stats=timeline_stats,
                          stats=stats)
 
 @app.route('/requirement/new', methods=['GET', 'POST'])

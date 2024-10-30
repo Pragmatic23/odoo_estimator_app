@@ -31,35 +31,6 @@ def analyze_complexity(requirements: List[Any]) -> Dict:
         'values': values if sum(values) > 0 else [0, 1, 0]  # Default to medium if no data
     }
 
-def analyze_timeline(requirements: List[Any]) -> Dict:
-    """Analyze project timeline patterns"""
-    def extract_months(timeline: str) -> int:
-        if not timeline:
-            return 0
-        import re
-        match = re.search(r'(\d+)\s*(?:month|months|mo)', timeline.lower())
-        return int(match.group(1)) if match else 0
-    
-    timeline_ranges = ['1-3 months', '4-6 months', '7-12 months', '12+ months']
-    counts = [0] * len(timeline_ranges)
-    
-    for req in requirements:
-        months = extract_months(req.preferred_timeline)
-        if months > 0:
-            if months <= 3:
-                counts[0] += 1
-            elif months <= 6:
-                counts[1] += 1
-            elif months <= 12:
-                counts[2] += 1
-            else:
-                counts[3] += 1
-    
-    return {
-        'labels': timeline_ranges,
-        'values': counts if sum(counts) > 0 else [0, 0, 0, 0]
-    }
-
 def get_requirements_stats(requirements: List[Any]) -> Dict:
     """Get overall requirements statistics"""
     if not requirements:
