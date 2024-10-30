@@ -14,6 +14,69 @@
     margin-bottom: 1.5rem;
 }
 
+/* Implementation Plan Styling */
+.plan-section {
+    background-color: var(--bs-dark);
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    margin-bottom: 1.5rem;
+    padding: 1.5rem;
+}
+
+.plan-section h1 {
+    color: var(--bs-primary);
+    font-size: 1.75rem;
+    font-weight: 600;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+.plan-section h2 {
+    color: var(--bs-info);
+    font-size: 1.5rem;
+    font-weight: 500;
+    margin: 1.25rem 0 1rem;
+}
+
+.plan-section ul {
+    list-style: none;
+    padding-left: 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.plan-section ul li {
+    position: relative;
+    padding-left: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.plan-section ul li::before {
+    content: "•";
+    color: var(--bs-primary);
+    position: absolute;
+    left: 0;
+    font-size: 1.25rem;
+    line-height: 1;
+}
+
+/* Section-specific styling */
+.plan-section.overview {
+    background-color: rgba(var(--bs-primary-rgb), 0.1);
+}
+
+.plan-section.phases {
+    background-color: rgba(var(--bs-info-rgb), 0.1);
+}
+
+.plan-section.technical {
+    background-color: rgba(var(--bs-success-rgb), 0.1);
+}
+
+.plan-section.risks {
+    background-color: rgba(var(--bs-warning-rgb), 0.1);
+}
+
 /* Print styles */
 @media print {
     .navbar,
@@ -35,12 +98,4 @@
 /* Form validation styles */
 .is-invalid {
     border-color: var(--bs-danger) !important;
-}
-
-.implementation-plan h1,
-.implementation-plan h2,
-.implementation-plan h3 {
-    color: var(--bs-primary);
-    margin-top: 1.5rem;
-    margin-bottom: 1rem;
 }

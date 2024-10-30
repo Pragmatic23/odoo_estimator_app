@@ -1,116 +1,134 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="row">
-    <div class="col">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>Implementation Plan</h2>
-            <div>
-                <button class="btn btn-primary me-2" onclick="window.print()">Print Plan</button>
-                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#progressModal">
-                    Update Progress
-                </button>
-            </div>
-        </div>
-
-        <div class="card mb-4">
-            <div class="card-header">
-                <h4>Project Details</h4>
-            </div>
-            <div class="card-body">
-                <dl class="row">
-                    <dt class="col-sm-3">Submission Date</dt>
-                    <dd class="col-sm-9">{{ requirement.created_at.strftime('%Y-%m-%d') }}</dd>
-
-                    <dt class="col-sm-3">Last Updated</dt>
-                    <dd class="col-sm-9">{{ requirement.last_updated.strftime('%Y-%m-%d %H:%M UTC') }}</dd>
-
-                    <dt class="col-sm-3">Project Scope</dt>
-                    <dd class="col-sm-9">{{ requirement.project_scope }}</dd>
-
-                    <dt class="col-sm-3">Customization Type</dt>
-                    <dd class="col-sm-9">{{ requirement.customization_type }}</dd>
-
-                    <dt class="col-sm-3">Modules Involved</dt>
-                    <dd class="col-sm-9">{{ requirement.modules_involved }}</dd>
-
-                    <dt class="col-sm-3">Overall Progress</dt>
-                    <dd class="col-sm-9">
-                        <div class="progress" style="height: 20px;">
-                            <div class="progress-bar" role="progressbar" 
-                                 style="width: {{ requirement.overall_progress }}%;" 
-                                 aria-valuenow="{{ requirement.overall_progress }}" 
-                                 aria-valuemin="0" 
-                                 aria-valuemax="100">
-                                {{ requirement.overall_progress }}%
-                            </div>
-                        </div>
-                    </dd>
-                </dl>
-            </div>
-        </div>
-
-        <div class="card mb-4">
-            <div class="card-header">
-                <h4>Phase Progress</h4>
-            </div>
-            <div class="card-body">
-                {% for phase, progress in requirement.phase_progress.items() %}
-                <div class="mb-3">
-                    <label class="form-label">{{ phase.replace('_', ' ').title() }}</label>
-                    <div class="progress" style="height: 20px;">
-                        <div class="progress-bar" role="progressbar" 
-                             style="width: {{ progress }}%;" 
-                             aria-valuenow="{{ progress }}" 
-                             aria-valuemin="0" 
-                             aria-valuemax="100">
-                            {{ progress }}%
-                        </div>
-                    </div>
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Implementation Plan</h2>
+                <div>
+                    <button class="btn btn-outline-primary me-2" onclick="window.print()">
+                        <i class="bi bi-printer"></i> Print Plan
+                    </button>
+                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#progressModal">
+                        <i class="bi bi-graph-up"></i> Update Progress
+                    </button>
                 </div>
-                {% endfor %}
             </div>
-        </div>
 
-        <div class="card mb-4">
-            <div class="card-header">
-                <h4>Implementation Plan</h4>
-            </div>
-            <div class="card-body">
-                <pre class="implementation-plan">{{ requirement.implementation_plan }}</pre>
-            </div>
-        </div>
+            <div class="card mb-4">
+                <div class="card-header bg-primary bg-opacity-10">
+                    <h4 class="mb-0">Project Details</h4>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-3">Submission Date</dt>
+                        <dd class="col-sm-9">{{ requirement.created_at.strftime('%Y-%m-%d') }}</dd>
 
-        <!-- Comments Section -->
-        <div class="card">
-            <div class="card-header">
-                <h4>Team Comments</h4>
-            </div>
-            <div class="card-body">
-                <form action="{{ url_for('add_comment', req_id=requirement.id) }}" method="POST" class="mb-4">
-                    <div class="mb-3">
-                        <label for="content" class="form-label">Add a Comment</label>
-                        <textarea class="form-control" id="content" name="content" rows="3" required></textarea>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Submit Comment</button>
-                </form>
+                        <dt class="col-sm-3">Last Updated</dt>
+                        <dd class="col-sm-9">{{ requirement.last_updated.strftime('%Y-%m-%d %H:%M UTC') }}</dd>
 
-                <div class="comments-section">
-                    {% if requirement.comments %}
-                        {% for comment in requirement.comments|sort(attribute='created_at', reverse=true) %}
-                            <div class="card mb-3">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between">
-                                        <h6 class="card-subtitle mb-2 text-muted">{{ comment.author.username }}</h6>
-                                        <small class="text-muted">{{ comment.created_at.strftime('%Y-%m-%d %H:%M UTC') }}</small>
-                                    </div>
-                                    <p class="card-text">{{ comment.content }}</p>
+                        <dt class="col-sm-3">Project Scope</dt>
+                        <dd class="col-sm-9">{{ requirement.project_scope }}</dd>
+
+                        <dt class="col-sm-3">Customization Type</dt>
+                        <dd class="col-sm-9">{{ requirement.customization_type }}</dd>
+
+                        <dt class="col-sm-3">Modules Involved</dt>
+                        <dd class="col-sm-9">{{ requirement.modules_involved }}</dd>
+
+                        <dt class="col-sm-3">Overall Progress</dt>
+                        <dd class="col-sm-9">
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar" role="progressbar" 
+                                     style="width: {{ requirement.overall_progress }}%;" 
+                                     aria-valuenow="{{ requirement.overall_progress }}" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
+                                    {{ requirement.overall_progress }}%
                                 </div>
                             </div>
-                        {% endfor %}
-                    {% else %}
-                        <p class="text-muted">No comments yet.</p>
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header bg-info bg-opacity-10">
+                    <h4 class="mb-0">Phase Progress</h4>
+                </div>
+                <div class="card-body">
+                    {% for phase, progress in requirement.phase_progress.items() %}
+                    <div class="mb-3">
+                        <label class="form-label">{{ phase.replace('_', ' ').title() }}</label>
+                        <div class="progress" style="height: 20px;">
+                            <div class="progress-bar bg-info" role="progressbar" 
+                                 style="width: {{ progress }}%;" 
+                                 aria-valuenow="{{ progress }}" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="100">
+                                {{ progress }}%
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div id="implementation-plan" class="mb-4">
+                {% set sections = requirement.implementation_plan.split('\n\n') %}
+                {% for section in sections %}
+                    {% if section.startswith('# Project Overview') %}
+                        <div class="plan-section overview">
+                            {{ section | replace('# Project Overview', '<h1>Project Overview</h1>') | safe }}
+                        </div>
+                    {% elif section.startswith('# Implementation Phases') %}
+                        <div class="plan-section phases">
+                            {{ section | replace('# Implementation Phases', '<h1>Implementation Phases</h1>') | safe }}
+                        </div>
+                    {% elif section.startswith('# Technical Requirements') %}
+                        <div class="plan-section technical">
+                            {{ section | replace('# Technical Requirements', '<h1>Technical Requirements</h1>') | safe }}
+                        </div>
+                    {% elif section.startswith('# Risk Analysis') %}
+                        <div class="plan-section risks">
+                            {{ section | replace('# Risk Analysis', '<h1>Risk Analysis</h1>') | safe }}
+                        </div>
                     {% endif %}
+                {% endfor %}
+            </div>
+
+            <!-- Comments Section -->
+            <div class="card">
+                <div class="card-header bg-secondary bg-opacity-10">
+                    <h4 class="mb-0">Team Comments</h4>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('add_comment', req_id=requirement.id) }}" method="POST" class="mb-4">
+                        <div class="mb-3">
+                            <label for="content" class="form-label">Add a Comment</label>
+                            <textarea class="form-control" id="content" name="content" rows="3" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Submit Comment</button>
+                    </form>
+
+                    <div class="comments-section">
+                        {% if requirement.comments %}
+                            {% for comment in requirement.comments|sort(attribute='created_at', reverse=true) %}
+                                <div class="card mb-3">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between">
+                                            <h6 class="card-subtitle mb-2 text-muted">{{ comment.author.username }}</h6>
+                                            <small class="text-muted">{{ comment.created_at.strftime('%Y-%m-%d %H:%M UTC') }}</small>
+                                        </div>
+                                        <p class="card-text">{{ comment.content }}</p>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-muted">No comments yet.</p>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
@@ -156,6 +174,15 @@ document.addEventListener('DOMContentLoaded', function() {
         range.addEventListener('input', function() {
             this.nextElementSibling.value = this.value + '%';
         });
+    });
+
+    // Convert markdown lists to HTML lists with proper styling
+    document.querySelectorAll('.plan-section').forEach(section => {
+        let content = section.innerHTML;
+        // Convert markdown lists to HTML lists
+        content = content.replace(/^- (.*?)$/gm, '<li>$1</li>');
+        content = content.replace(/(<li>.*?<\/li>\n?)+/gs, '<ul>$&</ul>');
+        section.innerHTML = content;
     });
 });
 </script>
