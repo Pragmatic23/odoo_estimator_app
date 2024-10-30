@@ -18,7 +18,6 @@ class Requirement(db.Model):
     modules_involved = db.Column(db.String(200), nullable=False)
     functional_requirements = db.Column(db.Text, nullable=False)
     technical_constraints = db.Column(db.Text)
-    preferred_timeline = db.Column(db.String(50))
     implementation_plan = db.Column(db.Text)
     status = db.Column(db.String(20), default='pending')
     complexity = db.Column(db.String(20), default='medium')

@@ -1,5 +1,7 @@
 from gpt_planner import generate_improved_plan
 from typing import Dict, Any
+from datetime import datetime, timedelta
+import re
 
 def generate_plan(analysis: Dict[str, Any]) -> str:
     """
@@ -7,7 +9,7 @@ def generate_plan(analysis: Dict[str, Any]) -> str:
     Falls back to basic plan generation if GPT generation fails
     """
     try:
-        # Try generating plan using GPT
+        # Always try GPT-4 first for enhanced plan generation
         return generate_improved_plan(analysis)
     except Exception as e:
         print(f"Falling back to basic plan generation: {str(e)}")
@@ -15,22 +17,8 @@ def generate_plan(analysis: Dict[str, Any]) -> str:
 
 def generate_basic_plan(analysis: Dict[str, Any]) -> str:
     """Basic plan generation logic as fallback"""
-    from datetime import datetime, timedelta
-    
     # Calculate timeline details
-    total_weeks = 0
-    if analysis['estimated_duration']:
-        # Try to extract months from the duration
-        import re
-        match = re.search(r'(\d+)\s*(?:month|months|mo)', analysis['estimated_duration'].lower())
-        if match:
-            months = int(match.group(1))
-            total_weeks = months * 4  # Approximate weeks per month
-        else:
-            # Default timeline if not specified
-            total_weeks = 12
-    else:
-        total_weeks = 12  # Default timeline
+    total_weeks = 12  # Default timeline
     
     # Calculate phase durations (in weeks)
     phase_durations = {

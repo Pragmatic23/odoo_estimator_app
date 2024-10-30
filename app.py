@@ -10,7 +10,6 @@ from analytics import analyze_modules, analyze_complexity, analyze_timeline, get
 from datetime import datetime
 from flask_wtf import FlaskForm, CSRFProtect
 from wtforms import StringField, TextAreaField, SelectField, validators
-import re
 
 class Base(DeclarativeBase):
     pass
@@ -30,10 +29,6 @@ class RequirementForm(FlaskForm):
     modules_involved = StringField('Modules Involved', validators=[validators.DataRequired()])
     functional_requirements = TextAreaField('Functional Requirements', validators=[validators.DataRequired()])
     technical_constraints = TextAreaField('Technical Constraints')
-    preferred_timeline = StringField('Preferred Timeline', validators=[
-        validators.DataRequired(),
-        validators.Regexp(r'^\d+\s*(?:month|months|mo)$', message='Timeline must be specified in months (e.g., "3 months")')
-    ])
 
 db = SQLAlchemy(model_class=Base)
 app = Flask(__name__)
@@ -137,8 +132,7 @@ def new_requirement():
                 customization_type=form.customization_type.data,
                 modules_involved=form.modules_involved.data.strip(),
                 functional_requirements=form.functional_requirements.data.strip(),
-                technical_constraints=form.technical_constraints.data.strip() if form.technical_constraints.data else '',
-                preferred_timeline=form.preferred_timeline.data.lower()
+                technical_constraints=form.technical_constraints.data.strip() if form.technical_constraints.data else ''
             )
             
             analysis = analyze_requirements(requirement)

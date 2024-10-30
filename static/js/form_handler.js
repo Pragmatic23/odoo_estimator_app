@@ -18,17 +18,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
             
-            // Validate timeline format
-            const timelineField = document.getElementById('preferred_timeline');
-            const timelineValue = timelineField.value.trim().toLowerCase();
-            const timelinePattern = /^\d+\s*(?:month|months|mo)$/;
-            
-            if (!timelinePattern.test(timelineValue)) {
-                isValid = false;
-                timelineField.classList.add('is-invalid');
-                alert('Timeline must be specified in months (e.g., "3 months")');
-            }
-            
             if (isValid) {
                 form.submit();
             } else {
