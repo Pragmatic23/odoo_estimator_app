@@ -8,6 +8,11 @@ from requirements_analyzer import analyze_requirements
 from plan_generator import generate_plan
 from analytics import analyze_modules, analyze_complexity, analyze_timeline, get_requirements_stats
 from datetime import datetime
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class Base(DeclarativeBase):
     pass
@@ -85,7 +90,7 @@ def dashboard():
 @login_required
 def analytics():
     from models import Requirement
-    requirements = Requirement.query.all()  # Get all requirements for analysis
+    requirements = Requirement.query.all()
     
     module_stats = analyze_modules(requirements)
     complexity_stats = analyze_complexity(requirements)
@@ -102,26 +107,69 @@ def analytics():
 @login_required
 def new_requirement():
     from models import Requirement
+    
     if request.method == 'POST':
-        requirement = Requirement(
-            user_id=current_user.id,
-            project_scope=request.form['project_scope'],
-            customization_type=request.form['customization_type'],
-            modules_involved=request.form['modules_involved'],
-            functional_requirements=request.form['functional_requirements'],
-            technical_constraints=request.form['technical_constraints'],
-            preferred_timeline=request.form['preferred_timeline']
-        )
-        
-        analysis = analyze_requirements(requirement)
-        requirement.complexity = analysis['complexity']
-        plan = generate_plan(analysis)
-        requirement.implementation_plan = plan
-        
-        db.session.add(requirement)
-        db.session.commit()
-        
-        return redirect(url_for('plan_review', req_id=requirement.id))
+        try:
+            # Log form data for debugging
+            logger.info(f"New requirement submission from user {current_user.id}")
+            logger.debug(f"Form data: {request.form}")
+            
+            # Validate required fields
+            required_fields = ['project_scope', 'customization_type', 'modules_involved', 'functional_requirements']
+            for field in required_fields:
+                if not request.form.get(field):
+                    flash(f'{field.replace("_", " ").title()} is required')
+                    return render_template('requirement_form.html'), 400
+            
+            # Additional validation
+            if len(request.form['project_scope'].strip()) < 10:
+                flash('Project scope must be at least 10 characters long')
+                return render_template('requirement_form.html'), 400
+                
+            if len(request.form['functional_requirements'].strip()) < 20:
+                flash('Functional requirements must be at least 20 characters long')
+                return render_template('requirement_form.html'), 400
+            
+            # Create requirement
+            requirement = Requirement(
+                user_id=current_user.id,
+                project_scope=request.form['project_scope'].strip(),
+                customization_type=request.form['customization_type'],
+                modules_involved=request.form['modules_involved'].strip(),
+                functional_requirements=request.form['functional_requirements'].strip(),
+                technical_constraints=request.form.get('technical_constraints', '').strip(),
+                preferred_timeline=request.form.get('preferred_timeline', '')
+            )
+            
+            # Analyze and generate plan
+            analysis = analyze_requirements(requirement)
+            requirement.complexity = analysis['complexity']
+            
+            try:
+                plan = generate_plan(analysis)
+                requirement.implementation_plan = plan
+            except Exception as e:
+                logger.error(f"Error generating plan: {str(e)}")
+                flash('Error generating implementation plan. Please try again.')
+                return render_template('requirement_form.html'), 500
+            
+            # Save to database
+            try:
+                db.session.add(requirement)
+                db.session.commit()
+                logger.info(f"Requirement {requirement.id} created successfully")
+                return redirect(url_for('plan_review', req_id=requirement.id))
+            except Exception as e:
+                logger.error(f"Database error: {str(e)}")
+                db.session.rollback()
+                flash('Error saving requirement. Please try again.')
+                return render_template('requirement_form.html'), 500
+                
+        except Exception as e:
+            logger.error(f"Unexpected error in new_requirement: {str(e)}")
+            flash('An unexpected error occurred. Please try again.')
+            return render_template('requirement_form.html'), 500
+            
     return render_template('requirement_form.html')
 
 @app.route('/plan/<int:req_id>')
@@ -129,6 +177,9 @@ def new_requirement():
 def plan_review(req_id):
     from models import Requirement
     requirement = Requirement.query.get_or_404(req_id)
+    if requirement.user_id != current_user.id:
+        flash('Unauthorized access')
+        return redirect(url_for('dashboard'))
     return render_template('plan_review.html', requirement=requirement)
 
 @app.route('/plan/<int:req_id>/comment', methods=['POST'])

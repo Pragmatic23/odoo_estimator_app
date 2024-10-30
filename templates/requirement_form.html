@@ -8,10 +8,14 @@
                 <h3 class="card-title">New ERP Requirement</h3>
             </div>
             <div class="card-body">
-                <form method="POST" id="requirementForm">
+                <form method="POST" id="requirementForm" class="needs-validation" novalidate>
                     <div class="mb-3">
                         <label for="project_scope" class="form-label">Project Scope</label>
-                        <textarea class="form-control" id="project_scope" name="project_scope" rows="4" required></textarea>
+                        <textarea class="form-control" id="project_scope" name="project_scope" rows="4" required 
+                                minlength="10" maxlength="2000"></textarea>
+                        <div class="invalid-feedback">
+                            Please provide a project scope (minimum 10 characters).
+                        </div>
                         <div class="form-text">Provide a general description of what you need.</div>
                     </div>
 
@@ -24,18 +28,28 @@
                             <option value="report_customization">Report Customization</option>
                             <option value="integration">Third-party Integration</option>
                         </select>
+                        <div class="invalid-feedback">
+                            Please select a customization type.
+                        </div>
                     </div>
 
                     <div class="mb-3">
                         <label for="modules_involved" class="form-label">Modules Involved</label>
                         <input type="text" class="form-control" id="modules_involved" name="modules_involved" 
-                               placeholder="e.g., Sales, Inventory, CRM" required>
+                               placeholder="e.g., Sales, Inventory, CRM" required
+                               pattern="^[A-Za-z0-9\s,]+$">
+                        <div class="invalid-feedback">
+                            Please specify at least one module (comma-separated).
+                        </div>
                     </div>
 
                     <div class="mb-3">
                         <label for="functional_requirements" class="form-label">Functional Requirements</label>
                         <textarea class="form-control" id="functional_requirements" name="functional_requirements" 
-                                  rows="6" required></textarea>
+                                  rows="6" required minlength="20" maxlength="5000"></textarea>
+                        <div class="invalid-feedback">
+                            Please provide functional requirements (minimum 20 characters).
+                        </div>
                         <div class="form-text">Describe specific features or processes you want.</div>
                     </div>
 
@@ -43,14 +57,15 @@
                         <label for="technical_constraints" class="form-label">Technical Constraints</label>
                         <textarea class="form-control" id="technical_constraints" name="technical_constraints" 
                                   rows="4"></textarea>
-                        <div class="form-text">Any technical restrictions or requirements.</div>
+                        <div class="form-text">Any technical restrictions or requirements (optional).</div>
                     </div>
 
-                    <!-- <div class="mb-3">
-                        <label for="preferred_timeline" class="form-label">Preferred Timeline</label>
-                        <input type="text" class="form-control" id="preferred_timeline" name="preferred_timeline" 
-                               placeholder="e.g., 3 months">
-                    </div> -->
+                    <div class="mb-3">
+                        <label for="preferred_timeline" class="form-label">Preferred Timeline (in months)</label>
+                        <input type="number" class="form-control" id="preferred_timeline" name="preferred_timeline" 
+                               min="1" max="24" placeholder="e.g., 3">
+                        <div class="form-text">Expected project duration in months (optional).</div>
+                    </div>
 
                     <button type="submit" class="btn btn-primary">Submit Requirement</button>
                 </form>
