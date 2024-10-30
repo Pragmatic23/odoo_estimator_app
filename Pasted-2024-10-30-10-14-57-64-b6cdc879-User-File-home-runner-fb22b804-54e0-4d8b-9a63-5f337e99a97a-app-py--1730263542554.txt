@@ -1,0 +1,140 @@
+2024-10-30 10:14:57.64
+b6cdc879
+User
+File "/home/runner/fb22b804-54e0-4d8b-9a63-5f337e99a97a/app.py", line 66, in register
+2024-10-30 10:14:57.64
+b6cdc879
+User
+db.session.commit()
+2024-10-30 10:14:57.64
+b6cdc879
+User
+File "/home/runner/fb22b804-54e0-4d8b-9a63-5f337e99a97a/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/orm/scoping.py", line 597, in commit
+2024-10-30 10:14:57.64
+b6cdc879
+User
+return self._proxied.commit()
+2024-10-30 10:14:57.64
+b6cdc879
+User
+^^^^^^^^^^^^^^^^^^^^^^
+2024-10-30 10:14:57.64
+b6cdc879
+User
+File "/home/runner/fb22b804-54e0-4d8b-9a63-5f337e99a97a/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 2028, in commit
+2024-10-30 10:14:57.64
+b6cdc879
+User
+trans.commit(_to_root=True)
+2024-10-30 10:14:57.64
+b6cdc879
+User
+File "", line 2, in commit
+2024-10-30 10:14:57.64
+b6cdc879
+User
+File "/home/runner/fb22b804-54e0-4d8b-9a63-5f337e99a97a/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py", line 139, in _go
+2024-10-30 10:14:57.64
+b6cdc879
+User
+ret_value = fn(self, *arg, **kw)
+2024-10-30 10:14:57.64
+b6cdc879
+User
+^^^^^^^^^^^^^^^^^^^^
+2024-10-30 10:14:57.64
+b6cdc879
+User
+File "/home/runner/fb22b804-54e0-4d8b-9a63-5f337e99a97a/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 1313, in commit
+2024-10-30 10:14:57.64
+b6cdc879
+User
+self._prepare_impl()
+2024-10-30 10:14:57.64
+b6cdc879
+User
+File "", line 2, in _prepare_impl
+2024-10-30 10:14:57.64
+b6cdc879
+User
+File "/home/runner/fb22b804-54e0-4d8b-9a63-5f337e99a97a/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py", line 139, in _go
+2024-10-30 10:14:57.64
+b6cdc879
+User
+ret_value = fn(self, *arg, **kw)
+2024-10-30 10:14:57.64
+b6cdc879
+User
+^^^^^^^^^^^^^^^^^^^^
+2024-10-30 10:14:57.64
+b6cdc879
+User
+File "/home/runner/fb22b804-54e0-4d8b-9a63-5f337e99a97a/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 1288, in _prepare_impl
+2024-10-30 10:14:57.64
+b6cdc879
+User
+self.session.flush()
+2024-10-30 10:14:57.64
+b6cdc879
+User
+File "/home/runner/fb22b804-54e0-4d8b-9a63-5f337e99a97a/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4352, in flush
+2024-10-30 10:14:57.64
+b6cdc879
+User
+self._flush(objects)
+2024-10-30 10:14:57.64
+b6cdc879
+User
+File "/home/runner/fb22b804-54e0-4d8b-9a63-5f337e99a97a/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4487, in _flush
+2024-10-30 10:14:57.64
+b6cdc879
+User
+with util.safe_reraise():
+2024-10-30 10:14:57.64
+b6cdc879
+User
+File "/home/runner/fb22b804-54e0-4d8b-9a63-5f337e99a97a/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
+2024-10-30 10:14:57.64
+b6cdc879
+User
+raise exc_value.with_traceback(exc_tb)
+2024-10-30 10:14:57.64
+b6cdc879
+User
+File "/home/runner/fb22b804-54e0-4d8b-9a63-5f337e99a97a/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4448, in _flush
+2024-10-30 10:14:57.64
+b6cdc879
+User
+File "/home/runner/fb22b804-54e0-4d8b-9a63-5f337e99a97a/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py", line 466, in execute
+2024-10-30 10:14:57.64
+b6cdc879
+User
+rec.execute(self)
+2024-10-30 10:14:57.64
+b6cdc879
+User
+util.preloaded.orm_persistence.save_obj(
+2024-10-30 10:14:57.64
+b6cdc879
+User
+File "/home/runner/fb22b804-54e0-4d8b-9a63-5f337e99a97a/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py", line 93, in save_obj
+2024-10-30 10:14:57.64
+b6cdc879
+User
+_emit_insert_statements(
+2024-10-30 10:14:57.64
+b6cdc879
+User
+File "/home/runner/fb22b804-54e0-4d8b-9a63-5f337e99a97a/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py", line 1233, in _emit_insert_statements
+2024-10-30 10:14:57.64
+b6cdc879
+User
+result = connection.execute(
+2024-10-30 10:14:57.64
+b6cdc879
+User
+^^^^^^^^^^^^^^^^^^^
+2024-10-30 10:14:57.64
+b6cdc879
+User
+File "/home/runner/fb22b804-54e0-4d8b-9a63-5f337e99a97a/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1418, in execute
