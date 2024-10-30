@@ -1,9 +1,14 @@
 import os
 import openai
 from typing import Dict, Any
+from openai import OpenAI
 
-# Initialize OpenAI client
-client = openai.OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
+# Initialize OpenAI client with error handling
+def get_openai_client():
+    api_key = os.environ.get('OPENAI_API_KEY')
+    if not api_key:
+        raise ValueError("OpenAI API key is not set in environment variables")
+    return OpenAI(api_key=api_key)
 
 def generate_improved_plan(analysis: Dict[str, Any]) -> str:
     """Generate an improved implementation plan using OpenAI GPT"""
@@ -20,21 +25,35 @@ Technical Requirements:
 {technical_reqs}
 
 The plan should include:
-1. Project Overview with timeline estimates
-2. Detailed phase breakdown (Initial Setup, Development, Testing, Deployment)
+1. Project Overview with exact timeline details
+   - Total duration in weeks and months
+   - Clear start and end dates
+   - Phase-specific durations
+2. Detailed phase breakdown:
+   - Initial Setup
+   - Development
+   - Testing
+   - Deployment
 3. Specific tasks and milestones for each phase
 4. Risk assessment and mitigation strategies
 5. Technical considerations and best practices
 6. Resource allocation recommendations
 
-Please format the response with Markdown headings and bullet points."""
+Please format the response with clear section headers and use markdown formatting."""
 
     try:
-        # Call OpenAI API
+        # Get OpenAI client
+        client = get_openai_client()
+        
+        # Call OpenAI API with improved error handling
         response = client.chat.completions.create(
             model="gpt-4",
             messages=[
-                {"role": "system", "content": "You are an expert ERP implementation consultant specializing in Odoo ERP systems. Generate detailed, practical implementation plans."},
+                {
+                    "role": "system", 
+                    "content": """You are an expert ERP implementation consultant specializing in Odoo ERP systems. 
+                    Generate detailed, practical implementation plans with clear timeline breakdowns and specific technical tasks."""
+                },
                 {"role": "user", "content": prompt}
             ],
             max_tokens=2000,
@@ -44,8 +63,11 @@ Please format the response with Markdown headings and bullet points."""
         # Extract and return the generated plan
         return response.choices[0].message.content.strip()
         
+    except openai.APIError as e:
+        print(f"OpenAI API Error: {str(e)}")
+        from plan_generator import generate_basic_plan
+        return generate_basic_plan(analysis)
     except Exception as e:
-        # Fallback to basic plan generation if API call fails
         print(f"Error generating plan with GPT: {str(e)}")
-        from plan_generator import generate_plan
-        return generate_plan(analysis)
+        from plan_generator import generate_basic_plan
+        return generate_basic_plan(analysis)
