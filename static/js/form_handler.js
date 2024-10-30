@@ -2,46 +2,30 @@ document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('requirementForm');
     
     if (form) {
-        // Prevent form submission if validation fails
-        form.addEventListener('submit', function(event) {
-            if (!form.checkValidity()) {
-                event.preventDefault();
-                event.stopPropagation();
-            }
-            form.classList.add('was-validated');
+        form.addEventListener('submit', function(e) {
+            // Basic client-side validation
+            const requiredFields = form.querySelectorAll('[required]');
+            let isValid = true;
             
-            // Additional custom validation
-            const projectScope = document.getElementById('project_scope');
-            const functionalReqs = document.getElementById('functional_requirements');
-            const modulesInvolved = document.getElementById('modules_involved');
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    isValid = false;
+                    field.classList.add('is-invalid');
+                } else {
+                    field.classList.remove('is-invalid');
+                }
+            });
             
-            if (projectScope.value.trim().length < 10) {
-                projectScope.setCustomValidity('Project scope must be at least 10 characters long.');
-                event.preventDefault();
-            } else {
-                projectScope.setCustomValidity('');
-            }
-            
-            if (functionalReqs.value.trim().length < 20) {
-                functionalReqs.setCustomValidity('Functional requirements must be at least 20 characters long.');
-                event.preventDefault();
-            } else {
-                functionalReqs.setCustomValidity('');
-            }
-            
-            const modulesList = modulesInvolved.value.trim().split(',').map(m => m.trim()).filter(m => m);
-            if (modulesList.length === 0) {
-                modulesInvolved.setCustomValidity('Please specify at least one module.');
-                event.preventDefault();
-            } else {
-                modulesInvolved.setCustomValidity('');
+            if (!isValid) {
+                e.preventDefault();
+                alert('Please fill in all required fields');
             }
         });
         
-        // Clear custom validity on input
+        // Remove invalid class on input
         form.querySelectorAll('input, textarea, select').forEach(field => {
             field.addEventListener('input', function() {
-                this.setCustomValidity('');
+                this.classList.remove('is-invalid');
             });
         });
     }
