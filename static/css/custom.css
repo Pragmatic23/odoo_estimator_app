@@ -11,7 +11,80 @@
 }
 
 .card {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease-in-out;
+    border: none;
     margin-bottom: 1.5rem;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+.card-header {
+    background: linear-gradient(45deg, var(--bs-dark) 0%, var(--bs-primary) 100%);
+    color: white;
+    border-bottom: none;
+}
+
+/* Enhanced Button Styles */
+.btn {
+    transition: all 0.2s ease;
+    border-radius: 5px;
+    padding: 0.5rem 1.2rem;
+}
+
+.btn-primary {
+    background: linear-gradient(45deg, var(--bs-primary) 0%, #2c7be5 100%);
+    border: none;
+}
+
+.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Enhanced Progress Bar */
+.progress {
+    height: 1rem;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 1rem;
+    overflow: hidden;
+}
+
+.progress-bar {
+    background: linear-gradient(45deg, var(--bs-primary) 0%, #2c7be5 100%);
+    transition: width 0.6s ease;
+}
+
+/* Table Enhancements */
+.table {
+    border-collapse: separate;
+    border-spacing: 0 0.5rem;
+}
+
+.table td, .table th {
+    padding: 1rem;
+    vertical-align: middle;
+}
+
+/* Form Control Enhancements */
+.form-control {
+    border-radius: 5px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    padding: 0.75rem 1rem;
+}
+
+.form-control:focus {
+    box-shadow: 0 0 0 0.2rem rgba(44, 123, 229, 0.25);
+}
+
+/* Implementation Plan Text */
+.implementation-plan {
+    border-radius: 8px;
+    padding: 1.5rem;
+    line-height: 1.6;
+    font-size: 0.95rem;
 }
 
 /* Print styles */
