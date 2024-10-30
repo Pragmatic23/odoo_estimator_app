@@ -19,6 +19,17 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             if (isValid) {
+                // Get button elements
+                const submitBtn = form.querySelector('#submitBtn');
+                const spinner = submitBtn.querySelector('.spinner-border');
+                const buttonText = submitBtn.querySelector('.button-text');
+
+                // Show loading state
+                spinner.classList.remove('d-none');
+                buttonText.textContent = 'Submitting...';
+                submitBtn.disabled = true;
+
+                // Submit the form
                 form.submit();
             } else {
                 alert('Please fill in all required fields correctly');
