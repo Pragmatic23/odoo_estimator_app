@@ -3,6 +3,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (form) {
         form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
             // Basic client-side validation
             const requiredFields = form.querySelectorAll('[required]');
             let isValid = true;
@@ -16,9 +18,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
             
-            if (!isValid) {
-                e.preventDefault();
-                alert('Please fill in all required fields');
+            // Validate timeline format
+            const timelineField = document.getElementById('preferred_timeline');
+            const timelineValue = timelineField.value.trim().toLowerCase();
+            const timelinePattern = /^\d+\s*(?:month|months|mo)$/;
+            
+            if (!timelinePattern.test(timelineValue)) {
+                isValid = false;
+                timelineField.classList.add('is-invalid');
+                alert('Timeline must be specified in months (e.g., "3 months")');
+            }
+            
+            if (isValid) {
+                form.submit();
+            } else {
+                alert('Please fill in all required fields correctly');
             }
         });
         

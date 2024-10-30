@@ -8,6 +8,8 @@ from requirements_analyzer import analyze_requirements
 from plan_generator import generate_plan
 from analytics import analyze_modules, analyze_complexity, analyze_timeline, get_requirements_stats
 from datetime import datetime
+from flask_wtf import CSRFProtect
+import re
 
 class Base(DeclarativeBase):
     pass
@@ -20,6 +22,8 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 300,
     "pool_pre_ping": True,
 }
+
+csrf = CSRFProtect(app)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -85,7 +89,7 @@ def dashboard():
 @login_required
 def analytics():
     from models import Requirement
-    requirements = Requirement.query.all()  # Get all requirements for analysis
+    requirements = Requirement.query.all()
     
     module_stats = analyze_modules(requirements)
     complexity_stats = analyze_complexity(requirements)
@@ -103,25 +107,53 @@ def analytics():
 def new_requirement():
     from models import Requirement
     if request.method == 'POST':
-        requirement = Requirement(
-            user_id=current_user.id,
-            project_scope=request.form['project_scope'],
-            customization_type=request.form['customization_type'],
-            modules_involved=request.form['modules_involved'],
-            functional_requirements=request.form['functional_requirements'],
-            technical_constraints=request.form['technical_constraints'],
-            preferred_timeline=request.form['preferred_timeline']
-        )
+        required_fields = ['project_scope', 'customization_type', 'modules_involved', 
+                         'functional_requirements', 'preferred_timeline']
         
-        analysis = analyze_requirements(requirement)
-        requirement.complexity = analysis['complexity']
-        plan = generate_plan(analysis)
-        requirement.implementation_plan = plan
+        for field in required_fields:
+            if not request.form.get(field):
+                flash(f'{field.replace("_", " ").title()} is required')
+                return redirect(url_for('new_requirement'))
         
-        db.session.add(requirement)
-        db.session.commit()
-        
-        return redirect(url_for('plan_review', req_id=requirement.id))
+        timeline = request.form['preferred_timeline'].lower()
+        if not re.search(r'^\d+\s*(?:month|months|mo)$', timeline):
+            flash('Timeline must be specified in months (e.g., "3 months")')
+            return redirect(url_for('new_requirement'))
+
+        try:
+            requirement = Requirement(
+                user_id=current_user.id,
+                project_scope=request.form['project_scope'].strip(),
+                customization_type=request.form['customization_type'],
+                modules_involved=request.form['modules_involved'].strip(),
+                functional_requirements=request.form['functional_requirements'].strip(),
+                technical_constraints=request.form.get('technical_constraints', '').strip(),
+                preferred_timeline=timeline
+            )
+            
+            analysis = analyze_requirements(requirement)
+            requirement.complexity = analysis['complexity']
+            
+            try:
+                plan = generate_plan(analysis)
+                requirement.implementation_plan = plan
+            except Exception as e:
+                app.logger.error(f"Error generating plan: {str(e)}")
+                flash('Error generating implementation plan. Please try again.')
+                return redirect(url_for('new_requirement'))
+            
+            db.session.add(requirement)
+            db.session.commit()
+            
+            flash('Requirement submitted successfully')
+            return redirect(url_for('plan_review', req_id=requirement.id))
+            
+        except Exception as e:
+            app.logger.error(f"Error saving requirement: {str(e)}")
+            db.session.rollback()
+            flash('Error saving requirement. Please try again.')
+            return redirect(url_for('new_requirement'))
+            
     return render_template('requirement_form.html')
 
 @app.route('/plan/<int:req_id>')

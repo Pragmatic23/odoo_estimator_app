@@ -12,4 +12,5 @@ dependencies = [
     "spacy>=3.8.2",
     "werkzeug",
     "openai>=1.52.2",
+    "flask-wtf>=1.2.2",
 ]
