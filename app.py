@@ -8,11 +8,32 @@ from requirements_analyzer import analyze_requirements
 from plan_generator import generate_plan
 from analytics import analyze_modules, analyze_complexity, analyze_timeline, get_requirements_stats
 from datetime import datetime
-from flask_wtf import CSRFProtect
+from flask_wtf import FlaskForm, CSRFProtect
+from wtforms import StringField, TextAreaField, SelectField, validators
 import re
 
 class Base(DeclarativeBase):
     pass
+
+class RequirementForm(FlaskForm):
+    project_scope = TextAreaField('Project Scope', validators=[validators.DataRequired()])
+    customization_type = SelectField(
+        'Customization Type',
+        choices=[
+            ('new_module', 'New Module'),
+            ('workflow_adjustment', 'Workflow Adjustment'),
+            ('report_customization', 'Report Customization'),
+            ('integration', 'Third-party Integration')
+        ],
+        validators=[validators.DataRequired()]
+    )
+    modules_involved = StringField('Modules Involved', validators=[validators.DataRequired()])
+    functional_requirements = TextAreaField('Functional Requirements', validators=[validators.DataRequired()])
+    technical_constraints = TextAreaField('Technical Constraints')
+    preferred_timeline = StringField('Preferred Timeline', validators=[
+        validators.DataRequired(),
+        validators.Regexp(r'^\d+\s*(?:month|months|mo)$', message='Timeline must be specified in months (e.g., "3 months")')
+    ])
 
 db = SQLAlchemy(model_class=Base)
 app = Flask(__name__)
@@ -106,29 +127,18 @@ def analytics():
 @login_required
 def new_requirement():
     from models import Requirement
-    if request.method == 'POST':
-        required_fields = ['project_scope', 'customization_type', 'modules_involved', 
-                         'functional_requirements', 'preferred_timeline']
-        
-        for field in required_fields:
-            if not request.form.get(field):
-                flash(f'{field.replace("_", " ").title()} is required')
-                return redirect(url_for('new_requirement'))
-        
-        timeline = request.form['preferred_timeline'].lower()
-        if not re.search(r'^\d+\s*(?:month|months|mo)$', timeline):
-            flash('Timeline must be specified in months (e.g., "3 months")')
-            return redirect(url_for('new_requirement'))
-
+    form = RequirementForm()
+    
+    if request.method == 'POST' and form.validate_on_submit():
         try:
             requirement = Requirement(
                 user_id=current_user.id,
-                project_scope=request.form['project_scope'].strip(),
-                customization_type=request.form['customization_type'],
-                modules_involved=request.form['modules_involved'].strip(),
-                functional_requirements=request.form['functional_requirements'].strip(),
-                technical_constraints=request.form.get('technical_constraints', '').strip(),
-                preferred_timeline=timeline
+                project_scope=form.project_scope.data.strip(),
+                customization_type=form.customization_type.data,
+                modules_involved=form.modules_involved.data.strip(),
+                functional_requirements=form.functional_requirements.data.strip(),
+                technical_constraints=form.technical_constraints.data.strip() if form.technical_constraints.data else '',
+                preferred_timeline=form.preferred_timeline.data.lower()
             )
             
             analysis = analyze_requirements(requirement)
@@ -154,7 +164,7 @@ def new_requirement():
             flash('Error saving requirement. Please try again.')
             return redirect(url_for('new_requirement'))
             
-    return render_template('requirement_form.html')
+    return render_template('requirement_form.html', form=form)
 
 @app.route('/plan/<int:req_id>')
 @login_required

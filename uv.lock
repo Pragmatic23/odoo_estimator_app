@@ -794,6 +794,7 @@ dependencies = [
     { name = "psycopg2-binary" },
     { name = "spacy" },
     { name = "werkzeug" },
+    { name = "wtforms" },
 ]
 
 [package.metadata]
@@ -807,6 +808,7 @@ requires-dist = [
     { name = "psycopg2-binary", specifier = ">=2.9.10" },
     { name = "spacy", specifier = ">=3.8.2" },
     { name = "werkzeug" },
+    { name = "wtforms", specifier = ">=3.2.1" },
 ]
 
 [[package]]
