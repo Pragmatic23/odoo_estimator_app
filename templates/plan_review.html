@@ -80,40 +80,6 @@
                 <pre class="implementation-plan">{{ requirement.implementation_plan }}</pre>
             </div>
         </div>
-
-        <!-- Comments Section -->
-        <div class="card">
-            <div class="card-header">
-                <h4>Team Comments</h4>
-            </div>
-            <div class="card-body">
-                <form action="{{ url_for('add_comment', req_id=requirement.id) }}" method="POST" class="mb-4">
-                    <div class="mb-3">
-                        <label for="content" class="form-label">Add a Comment</label>
-                        <textarea class="form-control" id="content" name="content" rows="3" required></textarea>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Submit Comment</button>
-                </form>
-
-                <div class="comments-section">
-                    {% if requirement.comments %}
-                        {% for comment in requirement.comments|sort(attribute='created_at', reverse=true) %}
-                            <div class="card mb-3">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between">
-                                        <h6 class="card-subtitle mb-2 text-muted">{{ comment.author.username }}</h6>
-                                        <small class="text-muted">{{ comment.created_at.strftime('%Y-%m-%d %H:%M UTC') }}</small>
-                                    </div>
-                                    <p class="card-text">{{ comment.content }}</p>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    {% else %}
-                        <p class="text-muted">No comments yet.</p>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
     </div>
 </div>
 

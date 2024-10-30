@@ -131,27 +131,6 @@ def plan_review(req_id):
     requirement = Requirement.query.get_or_404(req_id)
     return render_template('plan_review.html', requirement=requirement)
 
-@app.route('/plan/<int:req_id>/comment', methods=['POST'])
-@login_required
-def add_comment(req_id):
-    from models import Requirement, Comment
-    requirement = Requirement.query.get_or_404(req_id)
-    
-    if not request.form.get('content'):
-        flash('Comment cannot be empty')
-        return redirect(url_for('plan_review', req_id=req_id))
-        
-    comment = Comment(
-        content=request.form['content'],
-        user_id=current_user.id,
-        requirement_id=req_id
-    )
-    
-    db.session.add(comment)
-    db.session.commit()
-    flash('Comment added successfully')
-    return redirect(url_for('plan_review', req_id=req_id))
-
 @app.route('/plan/<int:req_id>/progress', methods=['POST'])
 @login_required
 def update_progress(req_id):
