@@ -54,14 +54,26 @@ def generate_basic_plan(analysis: Dict[str, Any]) -> str:
         }
         current_date = phase_end
 
+    # Calculate months and remaining weeks
+    months = total_weeks // 4
+    remaining_weeks = total_weeks % 4
+    duration_text = f"{total_weeks} weeks ({months} months, {remaining_weeks} weeks)"
+
     plan_sections = []
     
-    # Project Overview with detailed timeline
+    # Project Duration at the very top
+    duration_section = [
+        "Total Project Duration:",
+        f"- {duration_text}",
+        f"- Start Date: {start_date.strftime('%Y-%m-%d')}",
+        f"- End Date: {current_date.strftime('%Y-%m-%d')}",
+        "\n"
+    ]
+    plan_sections.append('\n'.join(duration_section))
+    
+    # Project Overview
     overview = [
         "# Project Overview",
-        f"Total Implementation Duration: {total_weeks} weeks",
-        f"Start Date: {start_date.strftime('%Y-%m-%d')}",
-        f"End Date: {current_date.strftime('%Y-%m-%d')}",
         "",
         "Core Modules:",
         *[f"- {module}" for module in analysis['modules']],
