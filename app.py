@@ -131,6 +131,20 @@ def plan_review(req_id):
     requirement = Requirement.query.get_or_404(req_id)
     return render_template('plan_review.html', requirement=requirement)
 
+@app.route('/requirement/<int:req_id>/delete')
+@login_required
+def delete_requirement(req_id):
+    from models import Requirement
+    requirement = Requirement.query.get_or_404(req_id)
+    if requirement.user_id != current_user.id:
+        flash('Unauthorized access')
+        return redirect(url_for('dashboard'))
+    
+    db.session.delete(requirement)
+    db.session.commit()
+    flash('Requirement deleted successfully')
+    return redirect(url_for('dashboard'))
+
 @app.route('/plan/<int:req_id>/progress', methods=['POST'])
 @login_required
 def update_progress(req_id):
