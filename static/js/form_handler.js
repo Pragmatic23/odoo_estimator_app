@@ -2,12 +2,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('requirementForm');
     
     if (form) {
-        const submitBtn = document.querySelector('#submitBtn');
-        const spinner = submitBtn ? submitBtn.querySelector('.spinner-border') : null;
-        const buttonText = submitBtn ? submitBtn.querySelector('.button-text') : null;
-
         form.addEventListener('submit', function(e) {
             e.preventDefault();
+            
+            // Get button elements after form submission is triggered
+            const submitBtn = document.getElementById('submitBtn');
+            const spinner = submitBtn.querySelector('.spinner-border');
+            const buttonText = submitBtn.querySelector('.button-text');
             
             // Basic client-side validation
             const requiredFields = form.querySelectorAll('[required]');
@@ -22,15 +23,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
             
-            if (isValid && submitBtn && spinner && buttonText) {
-                // Show loading state
-                spinner.classList.remove('d-none');
-                buttonText.textContent = 'Submitting...';
-                submitBtn.disabled = true;
-                
-                // Submit the form
-                form.submit();
-            } else if (!isValid) {
+            if (isValid) {
+                try {
+                    // Show loading state
+                    spinner.classList.remove('d-none');
+                    buttonText.textContent = 'Submitting...';
+                    submitBtn.disabled = true;
+                    
+                    // Submit the form after a short delay to ensure UI updates
+                    setTimeout(() => {
+                        form.submit();
+                    }, 100);
+                } catch (error) {
+                    console.error('Error updating button state:', error);
+                    // Submit form anyway if UI update fails
+                    form.submit();
+                }
+            } else {
                 alert('Please fill in all required fields correctly');
             }
         });
