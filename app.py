@@ -163,7 +163,8 @@ def new_requirement():
 def plan_review(req_id):
     from models import Requirement
     requirement = Requirement.query.get_or_404(req_id)
-    return render_template('plan_review.html', requirement=requirement)
+    form = FlaskForm()  # Create a form for CSRF token
+    return render_template('plan_review.html', requirement=requirement, form=form)
 
 @app.route('/requirement/<int:req_id>/delete')
 @login_required
@@ -183,29 +184,33 @@ def delete_requirement(req_id):
 @login_required
 def update_progress(req_id):
     from models import Requirement
-    requirement = Requirement.query.get_or_404(req_id)
-    if requirement.user_id != current_user.id:
-        flash('Unauthorized access')
-        return redirect(url_for('dashboard'))
-    
-    phase_progress = {}
-    for phase in ['initial_setup', 'development', 'testing', 'deployment']:
-        progress = int(request.form.get(phase, 0))
-        phase_progress[phase] = progress
-    
-    requirement.phase_progress = phase_progress
-    requirement.overall_progress = sum(phase_progress.values()) // len(phase_progress)
-    requirement.last_updated = datetime.utcnow()
-    
-    if requirement.overall_progress == 100:
-        requirement.status = 'completed'
-    elif requirement.overall_progress > 0:
-        requirement.status = 'in_progress'
+    form = FlaskForm()  # Create a form for CSRF
+    if form.validate_on_submit():
+        requirement = Requirement.query.get_or_404(req_id)
+        if requirement.user_id != current_user.id:
+            flash('Unauthorized access')
+            return redirect(url_for('dashboard'))
+        
+        phase_progress = {}
+        for phase in ['initial_setup', 'development', 'testing', 'deployment']:
+            progress = int(request.form.get(phase, 0))
+            phase_progress[phase] = progress
+        
+        requirement.phase_progress = phase_progress
+        requirement.overall_progress = sum(phase_progress.values()) // len(phase_progress)
+        requirement.last_updated = datetime.utcnow()
+        
+        if requirement.overall_progress == 100:
+            requirement.status = 'completed'
+        elif requirement.overall_progress > 0:
+            requirement.status = 'in_progress'
+        else:
+            requirement.status = 'pending'
+        
+        db.session.commit()
+        flash('Progress updated successfully')
     else:
-        requirement.status = 'pending'
-    
-    db.session.commit()
-    flash('Progress updated successfully')
+        flash('Invalid form submission')
     return redirect(url_for('plan_review', req_id=req_id))
 
 with app.app_context():
