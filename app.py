@@ -89,15 +89,34 @@ def admin_login():
         return redirect(url_for('admin_dashboard'))
     
     form = AdminLoginForm()
-    if request.method == 'POST' and form.validate_on_submit():
+    if request.method == 'POST':
         from models import User
-        user = User.query.filter_by(username=form.username.data).first()
         
-        if user and user.is_admin and check_password_hash(user.password_hash, form.password.data):
-            login_user(user)
-            flash('Welcome Admin!')
-            return redirect(url_for('admin_dashboard'))
-        flash('Invalid admin credentials')
+        # Handle credential reset
+        if request.args.get('reset'):
+            new_username = request.form.get('new_username')
+            new_password = request.form.get('new_password')
+            
+            if new_username and new_password:
+                admin = User.query.filter_by(is_admin=True).first()
+                if admin:
+                    admin.username = new_username
+                    admin.password_hash = generate_password_hash(new_password)
+                    db.session.commit()
+                    flash('Admin credentials updated successfully')
+                    return redirect(url_for('admin_login'))
+            flash('Invalid reset credentials')
+            return redirect(url_for('admin_login'))
+        
+        # Handle normal login
+        if form.validate_on_submit():
+            user = User.query.filter_by(username=form.username.data).first()
+            if user and user.is_admin and check_password_hash(user.password_hash, form.password.data):
+                login_user(user)
+                flash('Welcome Admin!')
+                return redirect(url_for('admin_dashboard'))
+            flash('Invalid admin credentials')
+    
     return render_template('admin/login.html', form=form)
 
 @app.route('/admin/reset-credentials', methods=['GET', 'POST'])
