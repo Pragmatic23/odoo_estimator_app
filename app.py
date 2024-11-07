@@ -9,11 +9,16 @@ from plan_generator import generate_plan
 from analytics import analyze_modules, analyze_complexity, get_requirements_stats
 from datetime import datetime
 from flask_wtf import FlaskForm, CSRFProtect
-from wtforms import StringField, TextAreaField, SelectField, validators
+from wtforms import StringField, TextAreaField, SelectField, PasswordField, BooleanField, validators
 from functools import wraps
 
 class Base(DeclarativeBase):
     pass
+
+class LoginForm(FlaskForm):
+    email = StringField('Email', validators=[validators.DataRequired(), validators.Email()])
+    password = PasswordField('Password', validators=[validators.DataRequired()])
+    is_admin = BooleanField('Login as Admin')
 
 class RequirementForm(FlaskForm):
     project_scope = TextAreaField('Project Scope', validators=[validators.DataRequired()])
@@ -61,18 +66,18 @@ def index():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     from models import User
-    if request.method == 'POST':
-        user = User.query.filter_by(email=request.form['email']).first()
-        if user and check_password_hash(user.password_hash, request.form['password']):
-            # Check if trying to login as admin
-            is_admin = request.form.get('isAdmin', False)
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if user and check_password_hash(user.password_hash, form.password.data):
+            is_admin = form.is_admin.data
             if is_admin and not user.is_admin:
                 flash('Unauthorized access')
                 return redirect(url_for('login'))
             login_user(user)
             return redirect(url_for('dashboard'))
         flash('Invalid credentials')
-    return render_template('login.html')
+    return render_template('login.html', form=form)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
