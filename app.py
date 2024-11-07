@@ -143,6 +143,29 @@ def admin_dashboard():
     form = FlaskForm()  # Create a form for CSRF token
     return render_template('admin/dashboard.html', users=users, form=form)
 
+@app.route('/admin/user/<int:user_id>/delete')
+@admin_required
+def delete_user(user_id):
+    from models import User
+    user = User.query.get_or_404(user_id)
+    
+    # Prevent admin from deleting themselves
+    if user.id == current_user.id:
+        flash('You cannot delete your own account')
+        return redirect(url_for('admin_dashboard'))
+    
+    # Delete user and their requirements
+    try:
+        db.session.delete(user)
+        db.session.commit()
+        flash(f'User {user.username} has been deleted')
+    except Exception as e:
+        db.session.rollback()
+        flash('Error deleting user')
+        app.logger.error(f"Error deleting user: {str(e)}")
+    
+    return redirect(url_for('admin_dashboard'))
+
 @app.route('/admin/user/<int:user_id>/reset-password', methods=['POST'])
 @admin_required
 def reset_user_password(user_id):
