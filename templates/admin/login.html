@@ -20,11 +20,12 @@
                     </div>
                     <button type="submit" class="btn btn-primary">Login</button>
                     <a href="{{ url_for('index') }}" class="btn btn-secondary">Back to Welcome</a>
+                    <button type="button" class="btn btn-warning" onclick="toggleResetForm()">Reset Credentials</button>
                 </form>
             </div>
         </div>
 
-        <div class="card mb-4 mt-4">
+        <div class="card mb-4 mt-4" id="resetForm" style="display: none;">
             <div class="card-header">
                 <h3 class="card-title">Reset Admin Credentials</h3>
             </div>
@@ -45,4 +46,15 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleResetForm() {
+    const resetForm = document.getElementById('resetForm');
+    if (resetForm) {
+        resetForm.style.display = resetForm.style.display === 'none' ? 'block' : 'none';
+    }
+}
+</script>
 {% endblock %}
