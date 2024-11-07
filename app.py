@@ -9,16 +9,10 @@ from plan_generator import generate_plan
 from analytics import analyze_modules, analyze_complexity, get_requirements_stats
 from datetime import datetime
 from flask_wtf import FlaskForm, CSRFProtect
-from wtforms import StringField, TextAreaField, SelectField, PasswordField, BooleanField, validators
-from functools import wraps
+from wtforms import StringField, TextAreaField, SelectField, validators
 
 class Base(DeclarativeBase):
     pass
-
-class LoginForm(FlaskForm):
-    email = StringField('Email', validators=[validators.DataRequired(), validators.Email()])
-    password = PasswordField('Password', validators=[validators.DataRequired()])
-    is_admin = BooleanField('Login as Admin')
 
 class RequirementForm(FlaskForm):
     project_scope = TextAreaField('Project Scope', validators=[validators.DataRequired()])
@@ -46,6 +40,7 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
 }
 
 csrf = CSRFProtect(app)
+
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
@@ -66,18 +61,13 @@ def index():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     from models import User
-    form = LoginForm()
-    if form.validate_on_submit():
-        user = User.query.filter_by(email=form.email.data).first()
-        if user and check_password_hash(user.password_hash, form.password.data):
-            is_admin = form.is_admin.data
-            if is_admin and not user.is_admin:
-                flash('Unauthorized access')
-                return redirect(url_for('login'))
+    if request.method == 'POST':
+        user = User.query.filter_by(email=request.form['email']).first()
+        if user and check_password_hash(user.password_hash, request.form['password']):
             login_user(user)
             return redirect(url_for('dashboard'))
         flash('Invalid credentials')
-    return render_template('login.html', form=form)
+    return render_template('login.html')
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -173,10 +163,7 @@ def new_requirement():
 def plan_review(req_id):
     from models import Requirement
     requirement = Requirement.query.get_or_404(req_id)
-    if requirement.user_id != current_user.id and not current_user.is_admin:
-        flash('Unauthorized access')
-        return redirect(url_for('dashboard'))
-    form = FlaskForm()
+    form = FlaskForm()  # Create a form for CSRF token
     return render_template('plan_review.html', requirement=requirement, form=form)
 
 @app.route('/requirement/<int:req_id>/delete')
@@ -184,28 +171,23 @@ def plan_review(req_id):
 def delete_requirement(req_id):
     from models import Requirement
     requirement = Requirement.query.get_or_404(req_id)
-    if requirement.user_id != current_user.id and not current_user.is_admin:
+    if requirement.user_id != current_user.id:
         flash('Unauthorized access')
         return redirect(url_for('dashboard'))
     
-    try:
-        db.session.delete(requirement)
-        db.session.commit()
-        flash('Requirement deleted successfully')
-    except Exception as e:
-        db.session.rollback()
-        flash('Error deleting requirement. Please try again.')
-        
+    db.session.delete(requirement)
+    db.session.commit()
+    flash('Requirement deleted successfully')
     return redirect(url_for('dashboard'))
 
 @app.route('/plan/<int:req_id>/progress', methods=['POST'])
 @login_required
 def update_progress(req_id):
     from models import Requirement
-    form = FlaskForm()
+    form = FlaskForm()  # Create a form for CSRF
     if form.validate_on_submit():
         requirement = Requirement.query.get_or_404(req_id)
-        if requirement.user_id != current_user.id and not current_user.is_admin:
+        if requirement.user_id != current_user.id:
             flash('Unauthorized access')
             return redirect(url_for('dashboard'))
         
@@ -231,26 +213,6 @@ def update_progress(req_id):
         flash('Invalid form submission')
     return redirect(url_for('plan_review', req_id=req_id))
 
-# Import and register blueprints
-from admin import admin
-app.register_blueprint(admin)
-
 with app.app_context():
     import models
     db.create_all()
-    
-    # Create an admin user if none exists
-    try:
-        admin_user = models.User.query.filter_by(is_admin=True).first()
-        if not admin_user:
-            admin_user = models.User(
-                username='admin',
-                email='admin@example.com',
-                password_hash=generate_password_hash('admin'),
-                is_admin=True
-            )
-            db.session.add(admin_user)
-            db.session.commit()
-            print("Admin user created successfully")
-    except Exception as e:
-        print(f"Error creating admin user: {str(e)}")

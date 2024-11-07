@@ -9,18 +9,13 @@
             </div>
             <div class="card-body">
                 <form method="POST">
-                    {{ form.csrf_token }}
                     <div class="mb-3">
-                        {{ form.email.label(class="form-label") }}
-                        {{ form.email(class="form-control", required=true) }}
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
                     </div>
                     <div class="mb-3">
-                        {{ form.password.label(class="form-label") }}
-                        {{ form.password(class="form-control", required=true) }}
-                    </div>
-                    <div class="mb-3 form-check">
-                        {{ form.is_admin(class="form-check-input") }}
-                        {{ form.is_admin.label(class="form-check-label") }}
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
                     </div>
                     <button type="submit" class="btn btn-primary">Login</button>
                 </form>

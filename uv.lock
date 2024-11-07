@@ -793,7 +793,6 @@ dependencies = [
     { name = "openai" },
     { name = "psycopg2-binary" },
     { name = "spacy" },
-    { name = "sqlalchemy" },
     { name = "werkzeug" },
     { name = "wtforms" },
 ]
@@ -808,7 +807,6 @@ requires-dist = [
     { name = "openai", specifier = ">=1.52.2" },
     { name = "psycopg2-binary", specifier = ">=2.9.10" },
     { name = "spacy", specifier = ">=3.8.2" },
-    { name = "sqlalchemy" },
     { name = "werkzeug" },
     { name = "wtforms", specifier = ">=3.2.1" },
 ]

@@ -7,7 +7,6 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(64), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256))
-    is_admin = db.Column(db.Boolean, default=False)
     requirements = db.relationship('Requirement', backref='user', lazy=True)
 
 class Requirement(db.Model):
