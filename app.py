@@ -19,6 +19,17 @@ class AdminLoginForm(FlaskForm):
     username = StringField('Username', validators=[validators.DataRequired()])
     password = PasswordField('Password', validators=[validators.DataRequired()])
 
+class AdminCredentialsForm(FlaskForm):
+    current_password = PasswordField('Current Password', validators=[validators.DataRequired()])
+    new_password = PasswordField('New Password', validators=[
+        validators.DataRequired(),
+        validators.Length(min=6, message="Password must be at least 6 characters long"),
+    ])
+    confirm_password = PasswordField('Confirm Password', validators=[
+        validators.DataRequired(),
+        validators.EqualTo('new_password', message='Passwords must match')
+    ])
+
 class RequirementForm(FlaskForm):
     project_scope = TextAreaField('Project Scope', validators=[validators.DataRequired()])
     customization_type = SelectField(
@@ -88,6 +99,22 @@ def admin_login():
             return redirect(url_for('admin_dashboard'))
         flash('Invalid admin credentials')
     return render_template('admin/login.html', form=form)
+
+@app.route('/admin/reset-credentials', methods=['GET', 'POST'])
+@admin_required
+def admin_reset_credentials():
+    form = AdminCredentialsForm()
+    if form.validate_on_submit():
+        if not check_password_hash(current_user.password_hash, form.current_password.data):
+            flash('Current password is incorrect')
+            return render_template('admin/reset_credentials.html', form=form)
+        
+        current_user.password_hash = generate_password_hash(form.new_password.data)
+        db.session.commit()
+        flash('Your credentials have been updated successfully')
+        return redirect(url_for('admin_dashboard'))
+    
+    return render_template('admin/reset_credentials.html', form=form)
 
 @app.route('/admin_dashboard')
 @admin_required
