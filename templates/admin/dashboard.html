@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">Admin Dashboard</h2>
+    
+    <!-- Stats Overview -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Total Users</h5>
+                    <h2 class="card-text">{{ stats.total_users }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Total Requirements</h5>
+                    <h2 class="card-text">{{ stats.total_requirements }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Admin Users</h5>
+                    <h2 class="card-text">{{ stats.admin_users }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- User Management -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>User Management</h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Requirements</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>{{ user.username }}</td>
+                            <td>{{ user.email }}</td>
+                            <td>{{ user.requirements|length }}</td>
+                            <td>
+                                <span class="badge {% if user.is_admin %}bg-success{% else %}bg-secondary{% endif %}">
+                                    {% if user.is_admin %}Admin{% else %}User{% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                <button class="btn btn-warning btn-sm" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#resetPasswordModal"
+                                        data-user-id="{{ user.id }}"
+                                        data-username="{{ user.username }}">
+                                    Reset Password
+                                </button>
+                                {% if user.is_admin and user.id != current_user.id %}
+                                <form action="{{ url_for('admin.remove_admin', user_id=user.id) }}" method="POST" class="d-inline">
+                                    {{ form.csrf_token }}
+                                    <button type="submit" class="btn btn-danger btn-sm">Remove Admin</button>
+                                </form>
+                                {% elif not user.is_admin %}
+                                <form action="{{ url_for('admin.make_admin', user_id=user.id) }}" method="POST" class="d-inline">
+                                    {{ form.csrf_token }}
+                                    <button type="submit" class="btn btn-success btn-sm">Make Admin</button>
+                                </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reset Password Modal -->
+<div class="modal fade" id="resetPasswordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ url_for('admin.reset_password') }}" method="POST">
+                {{ password_form.csrf_token }}
+                <div class="modal-header">
+                    <h5 class="modal-title">Reset Password</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="user_id" id="resetUserId">
+                    <p>Reset password for <span id="resetUsername"></span>?</p>
+                    <div class="mb-3">
+                        <label for="new_password" class="form-label">New Password</label>
+                        {{ password_form.new_password(class="form-control", required=true) }}
+                        {% if password_form.new_password.errors %}
+                            {% for error in password_form.new_password.errors %}
+                                <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Reset Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const resetPasswordModal = document.getElementById('resetPasswordModal');
+    if (resetPasswordModal) {
+        resetPasswordModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            if (button) {
+                const userId = button.getAttribute('data-user-id');
+                const username = button.getAttribute('data-username');
+                
+                const userIdInput = this.querySelector('#resetUserId');
+                const usernameSpan = this.querySelector('#resetUsername');
+                
+                if (userIdInput) userIdInput.value = userId;
+                if (usernameSpan) usernameSpan.textContent = username;
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
