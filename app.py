@@ -10,6 +10,7 @@ from analytics import analyze_modules, analyze_complexity, get_requirements_stat
 from datetime import datetime
 from flask_wtf import FlaskForm, CSRFProtect
 from wtforms import StringField, TextAreaField, SelectField, validators
+from functools import wraps
 
 class Base(DeclarativeBase):
     pass
@@ -40,12 +41,19 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
 }
 
 csrf = CSRFProtect(app)
-
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
-
 db.init_app(app)
+
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or not current_user.is_admin:
+            flash('You need to be logged in as an admin to view this page.')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -55,8 +63,61 @@ def load_user(user_id):
 @app.route('/')
 def index():
     if current_user.is_authenticated:
+        if current_user.is_admin:
+            return redirect(url_for('admin_dashboard'))
         return redirect(url_for('dashboard'))
-    return redirect(url_for('login'))
+    return render_template('welcome.html')
+
+@app.route('/admin/login', methods=['GET', 'POST'])
+def admin_login():
+    if current_user.is_authenticated:
+        if current_user.is_admin:
+            return redirect(url_for('admin_dashboard'))
+        return redirect(url_for('dashboard'))
+    
+    form = FlaskForm()
+    if request.method == 'POST' and form.validate_on_submit():
+        from models import User
+        user = User.query.filter_by(email=request.form['email']).first()
+        if user and user.is_admin and check_password_hash(user.password_hash, request.form['password']):
+            login_user(user)
+            return redirect(url_for('admin_dashboard'))
+        flash('Invalid admin credentials')
+    return render_template('admin/login.html', form=form)
+
+@app.route('/admin/dashboard')
+@admin_required
+def admin_dashboard():
+    from models import User
+    users = User.query.all()
+    form = FlaskForm()
+    return render_template('admin/dashboard.html', users=users, form=form)
+
+@app.route('/admin/user/<int:user_id>/reset-password', methods=['POST'])
+@admin_required
+def reset_user_password(user_id):
+    from models import User
+    form = FlaskForm()
+    if form.validate_on_submit():
+        user = User.query.get_or_404(user_id)
+        new_password = request.form['new_password']
+        user.password_hash = generate_password_hash(new_password)
+        db.session.commit()
+        flash(f'Password reset for user {user.username}')
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/user/<int:user_id>/toggle-admin')
+@admin_required
+def toggle_admin_status(user_id):
+    from models import User
+    user = User.query.get_or_404(user_id)
+    if user.id != current_user.id:  # Prevent admin from removing their own admin status
+        user.is_admin = not user.is_admin
+        db.session.commit()
+        flash(f'Admin status {"granted to" if user.is_admin else "removed from"} {user.username}')
+    else:
+        flash('You cannot modify your own admin status')
+    return redirect(url_for('admin_dashboard'))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -216,3 +277,15 @@ def update_progress(req_id):
 with app.app_context():
     import models
     db.create_all()
+    
+    # Create initial admin user if none exists
+    from models import User
+    if not User.query.filter_by(is_admin=True).first():
+        admin = User(
+            username='admin',
+            email='admin@example.com',
+            password_hash=generate_password_hash('admin'),
+            is_admin=True
+        )
+        db.session.add(admin)
+        db.session.commit()
