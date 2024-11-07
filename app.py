@@ -9,11 +9,15 @@ from plan_generator import generate_plan
 from analytics import analyze_modules, analyze_complexity, get_requirements_stats
 from datetime import datetime
 from flask_wtf import FlaskForm, CSRFProtect
-from wtforms import StringField, TextAreaField, SelectField, validators
+from wtforms import StringField, TextAreaField, SelectField, PasswordField, validators
 from functools import wraps
 
 class Base(DeclarativeBase):
     pass
+
+class AdminLoginForm(FlaskForm):
+    username = StringField('Username', validators=[validators.DataRequired()])
+    password = PasswordField('Password', validators=[validators.DataRequired()])
 
 class RequirementForm(FlaskForm):
     project_scope = TextAreaField('Project Scope', validators=[validators.DataRequired()])
@@ -51,7 +55,7 @@ def admin_required(f):
     def decorated_function(*args, **kwargs):
         if not current_user.is_authenticated or not current_user.is_admin:
             flash('You need to be logged in as an admin to view this page.')
-            return redirect(url_for('login'))
+            return redirect(url_for('admin_login'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -75,12 +79,14 @@ def admin_login():
             return redirect(url_for('admin_dashboard'))
         return redirect(url_for('dashboard'))
     
-    form = FlaskForm()
+    form = AdminLoginForm()
     if request.method == 'POST' and form.validate_on_submit():
         from models import User
-        user = User.query.filter_by(email=request.form['email']).first()
-        if user and user.is_admin and check_password_hash(user.password_hash, request.form['password']):
+        user = User.query.filter_by(username=form.username.data).first()
+        
+        if user and user.is_admin and check_password_hash(user.password_hash, form.password.data):
             login_user(user)
+            flash('Welcome Admin!')
             return redirect(url_for('admin_dashboard'))
         flash('Invalid admin credentials')
     return render_template('admin/login.html', form=form)
