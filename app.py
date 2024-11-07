@@ -74,10 +74,8 @@ def index():
 
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
-    if current_user.is_authenticated:
-        if current_user.is_admin:
-            return redirect(url_for('admin_dashboard'))
-        return redirect(url_for('dashboard'))
+    if current_user.is_authenticated and current_user.is_admin:
+        return redirect(url_for('admin_dashboard'))
     
     form = AdminLoginForm()
     if request.method == 'POST' and form.validate_on_submit():
@@ -286,7 +284,8 @@ with app.app_context():
     
     # Create initial admin user if none exists
     from models import User
-    if not User.query.filter_by(is_admin=True).first():
+    admin = User.query.filter_by(username='admin').first()
+    if not admin:
         admin = User(
             username='admin',
             email='admin@example.com',
@@ -294,4 +293,8 @@ with app.app_context():
             is_admin=True
         )
         db.session.add(admin)
+        db.session.commit()
+    elif not admin.is_admin:  # Ensure existing admin user has admin privileges
+        admin.is_admin = True
+        admin.password_hash = generate_password_hash('admin')
         db.session.commit()
