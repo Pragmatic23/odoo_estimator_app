@@ -89,12 +89,12 @@ def admin_login():
         flash('Invalid admin credentials')
     return render_template('admin/login.html', form=form)
 
-@app.route('/admin/dashboard')
+@app.route('/admin_dashboard')
 @admin_required
 def admin_dashboard():
     from models import User
     users = User.query.all()
-    form = FlaskForm()
+    form = FlaskForm()  # Create a form for CSRF token
     return render_template('admin/dashboard.html', users=users, form=form)
 
 @app.route('/admin/user/<int:user_id>/reset-password', methods=['POST'])
