@@ -8,15 +8,15 @@
                 <h3 class="card-title">Admin Login</h3>
             </div>
             <div class="card-body">
-                <form method="POST" id="loginForm" action="{{ url_for('admin_login') }}" target="_top">
+                <form method="POST" id="loginForm" action="{{ url_for('admin_login') }}">
                     {{ form.csrf_token }}
                     <div class="mb-3">
                         <label for="username" class="form-label">Username</label>
-                        <input type="text" class="form-control" id="username" name="username" required>
+                        {{ form.username(class="form-control", required=true) }}
                     </div>
                     <div class="mb-3">
                         <label for="password" class="form-label">Password</label>
-                        <input type="password" class="form-control" id="password" name="password" required>
+                        {{ form.password(class="form-control", required=true) }}
                     </div>
                     <button type="submit" class="btn btn-primary">
                         <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
