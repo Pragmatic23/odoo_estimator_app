@@ -11,14 +11,22 @@ document.addEventListener('DOMContentLoaded', function() {
         handleFormSubmission(registrationForm);
     }
     
+    // Handle login form submission
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        handleFormSubmission(loginForm);
+    }
+    
     // Handle admin reset credentials form submission
-    const resetForm = document.getElementById('resetCredentialsForm');
-    if (resetForm) {
-        handleFormSubmission(resetForm);
+    const resetCredentialsForm = document.getElementById('resetCredentialsForm');
+    if (resetCredentialsForm) {
+        handleFormSubmission(resetCredentialsForm);
     }
 });
 
 function handleFormSubmission(form) {
+    if (!form) return;
+
     const submitBtn = form.querySelector('button[type="submit"]');
     if (!submitBtn) return;
     
@@ -41,11 +49,23 @@ function handleFormSubmission(form) {
             }
         });
         
+        // Password matching validation for reset credentials form
+        if (form.id === 'resetCredentialsForm') {
+            const newPassword = form.querySelector('#new_password');
+            const confirmPassword = form.querySelector('#confirm_password');
+            if (newPassword && confirmPassword && newPassword.value !== confirmPassword.value) {
+                isValid = false;
+                confirmPassword.classList.add('is-invalid');
+                alert('New passwords do not match');
+                return;
+            }
+        }
+        
         if (isValid) {
             try {
                 // Show loading state if elements exist
                 if (spinner) spinner.classList.remove('d-none');
-                if (buttonText) buttonText.textContent = 'Submitting...';
+                if (buttonText) buttonText.textContent = 'Processing...';
                 if (submitBtn) submitBtn.disabled = true;
                 
                 // Submit the form after a short delay to ensure UI updates
@@ -65,6 +85,15 @@ function handleFormSubmission(form) {
     form.querySelectorAll('input, textarea, select').forEach(field => {
         field.addEventListener('input', function() {
             this.classList.remove('is-invalid');
+            
+            // Clear password match validation on input
+            if (form.id === 'resetCredentialsForm' && 
+                (this.id === 'new_password' || this.id === 'confirm_password')) {
+                const confirmPassword = form.querySelector('#confirm_password');
+                if (confirmPassword) {
+                    confirmPassword.classList.remove('is-invalid');
+                }
+            }
         });
     });
 }

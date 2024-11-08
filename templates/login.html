@@ -8,7 +8,8 @@
                 <h3 class="card-title">Login</h3>
             </div>
             <div class="card-body">
-                <form method="POST">
+                <form method="POST" id="loginForm">
+                    {{ form.csrf_token }}
                     <div class="mb-3">
                         <label for="email" class="form-label">Email</label>
                         <input type="email" class="form-control" id="email" name="email" required>
@@ -17,7 +18,10 @@
                         <label for="password" class="form-label">Password</label>
                         <input type="password" class="form-control" id="password" name="password" required>
                     </div>
-                    <button type="submit" class="btn btn-primary">Login</button>
+                    <button type="submit" class="btn btn-primary">
+                        <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                        <span class="button-text">Login</span>
+                    </button>
                 </form>
                 <p class="mt-3">
                     Don't have an account? <a href="{{ url_for('register') }}">Register here</a>
@@ -26,4 +30,8 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/form_handler.js') }}"></script>
 {% endblock %}

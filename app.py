@@ -25,6 +25,7 @@ login_manager.init_app(app)
 login_manager.login_view = 'login'
 db.init_app(app)
 
+# Form classes
 class AdminLoginForm(FlaskForm):
     username = StringField('Username', validators=[validators.DataRequired()])
     password = PasswordField('Password', validators=[validators.DataRequired()])
@@ -82,6 +83,84 @@ def index():
         return redirect(url_for('dashboard'))
     return render_template('welcome.html')
 
+@app.route('/admin/login', methods=['GET', 'POST'])
+def admin_login():
+    if current_user.is_authenticated and current_user.is_admin:
+        return redirect(url_for('admin_dashboard'))
+    
+    form = AdminLoginForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(username=form.username.data).first()
+        if user and user.is_admin and check_password_hash(user.password_hash, form.password.data):
+            login_user(user)
+            flash('Welcome Admin!')
+            return redirect(url_for('admin_dashboard'))
+        flash('Invalid admin credentials')
+    
+    return render_template('admin/login.html', form=form)
+
+@app.route('/admin/reset-credentials', methods=['GET', 'POST'])
+@admin_required
+def admin_reset_credentials():
+    form = AdminCredentialsForm()
+    if form.validate_on_submit():
+        if not check_password_hash(current_user.password_hash, form.current_password.data):
+            flash('Current password is incorrect')
+            return render_template('admin/reset_credentials.html', form=form)
+        
+        if len(form.new_password.data) < 6:
+            flash('New password must be at least 6 characters long')
+            return render_template('admin/reset_credentials.html', form=form)
+            
+        if form.new_password.data != form.confirm_password.data:
+            flash('New passwords do not match')
+            return render_template('admin/reset_credentials.html', form=form)
+        
+        try:
+            current_user.password_hash = generate_password_hash(form.new_password.data)
+            db.session.commit()
+            flash('Your credentials have been updated successfully', 'success')
+            return redirect(url_for('admin_dashboard'))
+        except Exception as e:
+            db.session.rollback()
+            app.logger.error(f"Error updating admin credentials: {str(e)}")
+            flash('Error updating credentials. Please try again.', 'error')
+    
+    return render_template('admin/reset_credentials.html', form=form)
+
+@app.route('/admin_dashboard')
+@admin_required
+def admin_dashboard():
+    users = User.query.all()
+    return render_template('admin/dashboard.html', users=users)
+
+@app.route('/admin/user/<int:user_id>/delete')
+@admin_required
+def delete_user(user_id):
+    user = User.query.get_or_404(user_id)
+    
+    # Prevent admin from deleting themselves
+    if user.id == current_user.id:
+        flash('You cannot delete your own account')
+        return redirect(url_for('admin_dashboard'))
+    
+    # Delete user and their requirements
+    try:
+        # Delete associated comments first
+        Comment.query.filter_by(user_id=user.id).delete()
+        # Delete requirements
+        Requirement.query.filter_by(user_id=user.id).delete()
+        # Delete user
+        db.session.delete(user)
+        db.session.commit()
+        flash(f'User {user.username} has been deleted')
+    except Exception as e:
+        db.session.rollback()
+        flash('Error deleting user')
+        app.logger.error(f"Error deleting user: {str(e)}")
+    
+    return redirect(url_for('admin_dashboard'))
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if current_user.is_authenticated:
@@ -107,70 +186,6 @@ def register():
         login_user(user)
         return redirect(url_for('dashboard'))
     return render_template('register.html', form=form)
-
-@app.route('/admin/login', methods=['GET', 'POST'])
-def admin_login():
-    if current_user.is_authenticated and current_user.is_admin:
-        return redirect(url_for('admin_dashboard'))
-    
-    form = AdminLoginForm()
-    if form.validate_on_submit():
-        user = User.query.filter_by(username=form.username.data).first()
-        if user and user.is_admin and check_password_hash(user.password_hash, form.password.data):
-            login_user(user)
-            flash('Welcome Admin!')
-            return redirect(url_for('admin_dashboard'))
-        flash('Invalid admin credentials')
-    
-    return render_template('admin/login.html', form=form)
-
-@app.route('/admin/reset-credentials', methods=['GET', 'POST'])
-@admin_required
-def admin_reset_credentials():
-    form = AdminCredentialsForm()
-    if form.validate_on_submit():
-        if not check_password_hash(current_user.password_hash, form.current_password.data):
-            flash('Current password is incorrect')
-            return render_template('admin/reset_credentials.html', form=form)
-            
-        if form.new_password.data != form.confirm_password.data:
-            flash('New passwords do not match')
-            return render_template('admin/reset_credentials.html', form=form)
-        
-        current_user.password_hash = generate_password_hash(form.new_password.data)
-        db.session.commit()
-        flash('Your credentials have been updated successfully')
-        return redirect(url_for('admin_dashboard'))
-    
-    return render_template('admin/reset_credentials.html', form=form)
-
-@app.route('/admin_dashboard')
-@admin_required
-def admin_dashboard():
-    users = User.query.all()
-    return render_template('admin/dashboard.html', users=users)
-
-@app.route('/admin/user/<int:user_id>/delete')
-@admin_required
-def delete_user(user_id):
-    user = User.query.get_or_404(user_id)
-    
-    # Prevent admin from deleting themselves
-    if user.id == current_user.id:
-        flash('You cannot delete your own account')
-        return redirect(url_for('admin_dashboard'))
-    
-    # Delete user and their requirements
-    try:
-        db.session.delete(user)
-        db.session.commit()
-        flash(f'User {user.username} has been deleted')
-    except Exception as e:
-        db.session.rollback()
-        flash('Error deleting user')
-        app.logger.error(f"Error deleting user: {str(e)}")
-    
-    return redirect(url_for('admin_dashboard'))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -202,7 +217,6 @@ def dashboard():
 @login_required
 def analytics():
     requirements = Requirement.query.all()
-    
     module_stats = analyze_modules(requirements)
     complexity_stats = analyze_complexity(requirements)
     stats = get_requirements_stats(requirements)
@@ -333,3 +347,6 @@ with app.app_context():
         admin.is_admin = True
         admin.password_hash = generate_password_hash('admin')
         db.session.commit()
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=True)
