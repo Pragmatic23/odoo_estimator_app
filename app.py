@@ -82,6 +82,32 @@ def index():
         return redirect(url_for('dashboard'))
     return render_template('welcome.html')
 
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+        
+    form = RegistrationForm()
+    if form.validate_on_submit():
+        if User.query.filter_by(email=form.email.data).first():
+            flash('Email already registered')
+            return redirect(url_for('register'))
+            
+        if User.query.filter_by(username=form.username.data).first():
+            flash('Username already taken')
+            return redirect(url_for('register'))
+        
+        user = User(
+            username=form.username.data,
+            email=form.email.data,
+            password_hash=generate_password_hash(form.password.data)
+        )
+        db.session.add(user)
+        db.session.commit()
+        login_user(user)
+        return redirect(url_for('dashboard'))
+    return render_template('register.html', form=form)
+
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     if current_user.is_authenticated and current_user.is_admin:
@@ -159,28 +185,6 @@ def login():
             return redirect(url_for('dashboard'))
         flash('Invalid credentials')
     return render_template('login.html', form=form)
-
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
-        
-    form = RegistrationForm()
-    if form.validate_on_submit():
-        if User.query.filter_by(email=form.email.data).first():
-            flash('Email already registered')
-            return redirect(url_for('register'))
-        
-        user = User(
-            username=form.username.data,
-            email=form.email.data,
-            password_hash=generate_password_hash(form.password.data)
-        )
-        db.session.add(user)
-        db.session.commit()
-        login_user(user)
-        return redirect(url_for('dashboard'))
-    return render_template('register.html', form=form)
 
 @app.route('/logout')
 @login_required
