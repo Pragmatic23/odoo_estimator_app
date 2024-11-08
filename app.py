@@ -39,6 +39,10 @@ class AdminLoginForm(FlaskForm):
     username = StringField('Username', validators=[validators.DataRequired()])
     password = PasswordField('Password', validators=[validators.DataRequired()])
 
+class LoginForm(FlaskForm):
+    email = EmailField('Email', validators=[validators.DataRequired(), validators.Email()])
+    password = PasswordField('Password', validators=[validators.DataRequired()])
+
 class AdminCredentialsForm(FlaskForm):
     current_password = PasswordField('Current Password', validators=[validators.DataRequired()])
     new_password = PasswordField('New Password', validators=[
@@ -190,13 +194,13 @@ def login():
     if current_user.is_authenticated:
         return redirect(url_for('dashboard'))
         
-    form = FlaskForm()
+    form = LoginForm()  # Use LoginForm instead of FlaskForm
     if form.validate_on_submit():
-        user = User.query.filter_by(email=request.form['email']).first()
-        if user and check_password_hash(user.password_hash, request.form['password']):
+        user = User.query.filter_by(email=form.email.data).first()
+        if user and check_password_hash(user.password_hash, form.password.data):
             login_user(user)
             return redirect(url_for('dashboard'))
-        flash('Invalid credentials')
+        flash('Invalid email or password')
     return render_template('login.html', form=form)
 
 @app.route('/logout')
