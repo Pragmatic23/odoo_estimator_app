@@ -35,7 +35,11 @@
                                         {% if user.requirements %}
                                         <ul class="list-unstyled mb-0">
                                             {% for req in user.requirements %}
-                                            <li>• {{ req.project_scope[:50] }}...</li>
+                                            <li>
+                                                • {{ req.project_scope[:50] }}...
+                                                <a href="{{ url_for('plan_review', req_id=req.id) }}" 
+                                                   class="btn btn-sm btn-info ms-2">View</a>
+                                            </li>
                                             {% endfor %}
                                         </ul>
                                         {% else %}
