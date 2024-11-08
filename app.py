@@ -3,7 +3,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf import FlaskForm, CSRFProtect
-from wtforms import StringField, TextAreaField, SelectField, PasswordField, validators
+from wtforms import StringField, TextAreaField, SelectField, PasswordField, EmailField, validators
 from functools import wraps
 from requirements_analyzer import analyze_requirements
 from plan_generator import generate_plan
@@ -39,6 +39,11 @@ class AdminCredentialsForm(FlaskForm):
         validators.DataRequired(),
         validators.EqualTo('new_password', message='Passwords must match')
     ])
+
+class RegistrationForm(FlaskForm):
+    username = StringField('Username', validators=[validators.DataRequired()])
+    email = EmailField('Email', validators=[validators.DataRequired(), validators.Email()])
+    password = PasswordField('Password', validators=[validators.DataRequired()])
 
 class RequirementForm(FlaskForm):
     project_scope = TextAreaField('Project Scope', validators=[validators.DataRequired()])
@@ -101,6 +106,10 @@ def admin_reset_credentials():
         if not check_password_hash(current_user.password_hash, form.current_password.data):
             flash('Current password is incorrect')
             return render_template('admin/reset_credentials.html', form=form)
+            
+        if form.new_password.data != form.confirm_password.data:
+            flash('New passwords do not match')
+            return render_template('admin/reset_credentials.html', form=form)
         
         current_user.password_hash = generate_password_hash(form.new_password.data)
         db.session.commit()
@@ -139,6 +148,9 @@ def delete_user(user_id):
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+        
     form = FlaskForm()
     if form.validate_on_submit():
         user = User.query.filter_by(email=request.form['email']).first()
@@ -150,17 +162,19 @@ def login():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    form = FlaskForm()
-    
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+        
+    form = RegistrationForm()
     if form.validate_on_submit():
-        if User.query.filter_by(email=request.form['email']).first():
+        if User.query.filter_by(email=form.email.data).first():
             flash('Email already registered')
             return redirect(url_for('register'))
         
         user = User(
-            username=request.form['username'],
-            email=request.form['email'],
-            password_hash=generate_password_hash(request.form['password'])
+            username=form.username.data,
+            email=form.email.data,
+            password_hash=generate_password_hash(form.password.data)
         )
         db.session.add(user)
         db.session.commit()
@@ -238,6 +252,9 @@ def new_requirement():
 @login_required
 def plan_review(req_id):
     requirement = Requirement.query.get_or_404(req_id)
+    if requirement.user_id != current_user.id and not current_user.is_admin:
+        flash('Unauthorized access')
+        return redirect(url_for('dashboard'))
     form = FlaskForm()
     return render_template('plan_review.html', requirement=requirement, form=form)
 
@@ -245,13 +262,21 @@ def plan_review(req_id):
 @login_required
 def delete_requirement(req_id):
     requirement = Requirement.query.get_or_404(req_id)
-    if requirement.user_id != current_user.id:
+    if requirement.user_id != current_user.id and not current_user.is_admin:
         flash('Unauthorized access')
         return redirect(url_for('dashboard'))
     
-    db.session.delete(requirement)
-    db.session.commit()
-    flash('Requirement deleted successfully')
+    try:
+        # Delete associated comments first
+        Comment.query.filter_by(requirement_id=req_id).delete()
+        db.session.delete(requirement)
+        db.session.commit()
+        flash('Requirement deleted successfully')
+    except Exception as e:
+        db.session.rollback()
+        flash('Error deleting requirement')
+        app.logger.error(f"Error deleting requirement: {str(e)}")
+    
     return redirect(url_for('dashboard'))
 
 @app.route('/plan/<int:req_id>/progress', methods=['POST'])
@@ -260,7 +285,7 @@ def update_progress(req_id):
     form = FlaskForm()
     if form.validate_on_submit():
         requirement = Requirement.query.get_or_404(req_id)
-        if requirement.user_id != current_user.id:
+        if requirement.user_id != current_user.id and not current_user.is_admin:
             flash('Unauthorized access')
             return redirect(url_for('dashboard'))
         
