@@ -5,6 +5,12 @@ document.addEventListener('DOMContentLoaded', function() {
         handleFormSubmission(requirementForm);
     }
     
+    // Handle registration form submission
+    const registrationForm = document.getElementById('registrationForm');
+    if (registrationForm) {
+        handleFormSubmission(registrationForm);
+    }
+    
     // Handle admin reset credentials form submission
     const resetForm = document.getElementById('resetCredentialsForm');
     if (resetForm) {
