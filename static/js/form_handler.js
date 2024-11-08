@@ -15,13 +15,13 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function handleFormSubmission(form) {
-    if (!form) return;
+    if (!form) return;  // Early return if form doesn't exist
 
-    const submitBtn = form.querySelector('button[type="submit"]');
-    if (!submitBtn) return;
+    const submitBtn = form?.querySelector('button[type="submit"]');
+    if (!submitBtn) return;  // Early return if button doesn't exist
     
-    const spinner = submitBtn.querySelector('.spinner-border');
-    const buttonText = submitBtn.querySelector('.button-text');
+    const spinner = submitBtn?.querySelector('.spinner-border');
+    const buttonText = submitBtn?.querySelector('.button-text');
     
     form.addEventListener('submit', function(e) {
         e.preventDefault();

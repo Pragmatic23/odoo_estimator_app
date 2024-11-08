@@ -31,6 +31,10 @@ login_manager.login_view = 'login'
 db.init_app(app)
 
 # Form classes
+class LoginForm(FlaskForm):
+    email = EmailField('Email', validators=[validators.DataRequired(), validators.Email()])
+    password = PasswordField('Password', validators=[validators.DataRequired()])
+
 class AdminLoginForm(FlaskForm):
     username = StringField('Username', validators=[validators.DataRequired()])
     password = PasswordField('Password', validators=[validators.DataRequired()])
@@ -100,13 +104,55 @@ def index():
         return redirect(url_for('dashboard'))
     return render_template('welcome.html')
 
-@app.route('/admin')
-def admin():
-    if current_user.is_authenticated and current_user.is_admin:
-        return redirect(url_for('admin_dashboard'))
-    return redirect(url_for('admin_login'))
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    
+    form = RegistrationForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(username=form.username.data).first()
+        if user:
+            flash('Username already exists')
+            return render_template('register.html', form=form)
+        
+        user = User.query.filter_by(email=form.email.data).first()
+        if user:
+            flash('Email already registered')
+            return render_template('register.html', form=form)
+        
+        user = User(
+            username=form.username.data,
+            email=form.email.data,
+            password_hash=generate_password_hash(form.password.data)
+        )
+        db.session.add(user)
+        try:
+            db.session.commit()
+            login_user(user)
+            return redirect(url_for('dashboard'))
+        except Exception as e:
+            db.session.rollback()
+            app.logger.error(f"Error registering user: {str(e)}")
+            flash('Error creating account. Please try again.')
+    
+    return render_template('register.html', form=form)
 
-@app.route('/admin', methods=['GET', 'POST'])
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if user and check_password_hash(user.password_hash, form.password.data):
+            login_user(user)
+            return redirect(url_for('dashboard'))
+        flash('Invalid email or password')
+    return render_template('login.html', form=form)
+
+@app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     if current_user.is_authenticated and current_user.is_admin:
         return redirect(url_for('admin_dashboard'))
@@ -150,6 +196,12 @@ def admin_reset_credentials():
 def admin_dashboard():
     users = User.query.all()
     return render_template('admin/dashboard.html', users=users)
+
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    requirements = Requirement.query.filter_by(user_id=current_user.id).all()
+    return render_template('dashboard.html', requirements=requirements)
 
 @app.route('/logout')
 @login_required
