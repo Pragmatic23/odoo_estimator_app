@@ -24,7 +24,10 @@ function handleFormSubmission(form) {
     const buttonText = submitBtn.querySelector('.button-text');
     
     form.addEventListener('submit', function(e) {
-        e.preventDefault();
+        // Only prevent default if we need to do custom handling
+        if (form.id === 'requirementForm') {
+            e.preventDefault();
+        }
         
         // Basic client-side validation
         const requiredFields = form.querySelectorAll('[required]');
@@ -39,37 +42,29 @@ function handleFormSubmission(form) {
             }
         });
         
-        // Password matching validation for reset credentials form
-        if (form.id === 'resetCredentialsForm') {
-            const newPassword = form.querySelector('#new_password');
-            const confirmPassword = form.querySelector('#confirm_password');
-            if (newPassword && confirmPassword && newPassword.value !== confirmPassword.value) {
-                isValid = false;
-                confirmPassword.classList.add('is-invalid');
-                alert('New passwords do not match');
-                return;
-            }
-        }
-        
         if (isValid) {
+            if (spinner) spinner.classList.remove('d-none');
+            if (buttonText) buttonText.textContent = 'Processing...';
+            if (submitBtn) submitBtn.disabled = true;
+            
+            // Allow normal form submission for login and registration
+            if (form.id !== 'requirementForm') {
+                return true;
+            }
+            
+            // Custom handling for requirement form
             try {
-                if (spinner) spinner.classList.remove('d-none');
-                if (buttonText) buttonText.textContent = 'Processing...';
-                if (submitBtn) submitBtn.disabled = true;
-                
-                // Check if in iframe and handle accordingly
-                if (window !== window.top) {
-                    form.target = '_top';
-                }
-                
                 form.submit();
             } catch (error) {
                 console.error('Error submitting form:', error);
                 if (spinner) spinner.classList.add('d-none');
-                if (buttonText) buttonText.textContent = form.id === 'loginForm' ? 'Login' : 'Submit';
+                if (buttonText) buttonText.textContent = 'Submit';
                 if (submitBtn) submitBtn.disabled = false;
             }
         } else {
+            if (form.id === 'requirementForm') {
+                e.preventDefault();
+            }
             alert('Please fill in all required fields correctly');
         }
     });
