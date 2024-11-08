@@ -100,12 +100,6 @@ def index():
         return redirect(url_for('dashboard'))
     return render_template('welcome.html')
 
-@app.route('/admin')
-def admin_welcome():
-    if current_user.is_authenticated and current_user.is_admin:
-        return redirect(url_for('admin_dashboard'))
-    return render_template('admin/welcome.html')
-
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     if current_user.is_authenticated and current_user.is_admin:
@@ -116,7 +110,11 @@ def admin_login():
         user = User.query.filter_by(username=form.username.data).first()
         if user and user.is_admin and check_password_hash(user.password_hash, form.password.data):
             login_user(user)
-            return redirect(url_for('admin_dashboard'))
+            # Add SameSite attribute for cookies in iframe context
+            response = make_response(redirect(url_for('admin_dashboard')))
+            response.set_cookie('session', response.headers.get('Set-Cookie', '').split('=')[1].split(';')[0], 
+                              samesite='None', secure=True)
+            return response
         flash('Invalid admin credentials')
     
     return render_template('admin/login.html', form=form)
@@ -127,7 +125,7 @@ def admin_reset_credentials():
     form = AdminCredentialsForm()
     if form.validate_on_submit():
         if not check_password_hash(current_user.password_hash, form.current_password.data):
-            flash('Current password is incorrect', 'error')
+            flash('Current password is incorrect')
             return render_template('admin/reset_credentials.html', form=form)
         
         try:
@@ -148,11 +146,28 @@ def admin_dashboard():
     users = User.query.all()
     return render_template('admin/dashboard.html', users=users)
 
-@app.route('/logout')
-@login_required
-def logout():
-    logout_user()
-    return redirect(url_for('index'))
+@app.route('/admin/user/<int:user_id>/delete')
+@admin_required
+def delete_user(user_id):
+    user = User.query.get_or_404(user_id)
+    
+    # Prevent admin from deleting themselves
+    if user.id == current_user.id:
+        flash('You cannot delete your own account')
+        return redirect(url_for('admin_dashboard'))
+    
+    try:
+        Comment.query.filter_by(user_id=user.id).delete()
+        Requirement.query.filter_by(user_id=user.id).delete()
+        db.session.delete(user)
+        db.session.commit()
+        flash(f'User {user.username} has been deleted')
+    except Exception as e:
+        db.session.rollback()
+        flash('Error deleting user')
+        app.logger.error(f"Error deleting user: {str(e)}")
+    
+    return redirect(url_for('admin_dashboard'))
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -202,30 +217,151 @@ def login():
         flash('Invalid email or password')
     return render_template('login.html', form=form)
 
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('index'))
+
 @app.route('/dashboard')
 @login_required
 def dashboard():
     requirements = Requirement.query.filter_by(user_id=current_user.id).all()
     return render_template('dashboard.html', requirements=requirements)
 
-if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-        
-        # Create initial admin user if none exists
-        admin = User.query.filter_by(username='admin').first()
-        if not admin:
-            admin = User(
-                username='admin',
-                email='admin@example.com',
-                password_hash=generate_password_hash('admin'),
-                is_admin=True
+@app.route('/analytics')
+@login_required
+def analytics():
+    requirements = Requirement.query.all()
+    module_stats = analyze_modules(requirements)
+    complexity_stats = analyze_complexity(requirements)
+    stats = get_requirements_stats(requirements)
+    
+    return render_template('analytics.html',
+                         module_stats=module_stats,
+                         complexity_stats=complexity_stats,
+                         stats=stats)
+
+@app.route('/requirement/new', methods=['GET', 'POST'])
+@login_required
+def new_requirement():
+    form = RequirementForm()
+    if form.validate_on_submit():
+        try:
+            requirement = Requirement(
+                user_id=current_user.id,
+                project_scope=form.project_scope.data.strip(),
+                customization_type=form.customization_type.data,
+                modules_involved=form.modules_involved.data.strip(),
+                functional_requirements=form.functional_requirements.data.strip(),
+                technical_constraints=form.technical_constraints.data.strip() if form.technical_constraints.data else ''
             )
-            db.session.add(admin)
-            db.session.commit()
-        elif not admin.is_admin:  # Ensure existing admin user has admin privileges
-            admin.is_admin = True
-            admin.password_hash = generate_password_hash('admin')
+            
+            analysis = analyze_requirements(requirement)
+            requirement.complexity = analysis['complexity']
+            
+            try:
+                plan = generate_plan(analysis)
+                requirement.implementation_plan = plan
+            except Exception as e:
+                app.logger.error(f"Error generating plan: {str(e)}")
+                flash('Error generating implementation plan. Please try again.')
+                return redirect(url_for('new_requirement'))
+            
+            db.session.add(requirement)
             db.session.commit()
             
+            flash('Requirement submitted successfully')
+            return redirect(url_for('plan_review', req_id=requirement.id))
+            
+        except Exception as e:
+            app.logger.error(f"Error saving requirement: {str(e)}")
+            db.session.rollback()
+            flash('Error saving requirement. Please try again.')
+            return redirect(url_for('new_requirement'))
+            
+    return render_template('requirement_form.html', form=form)
+
+@app.route('/plan/<int:req_id>')
+@login_required
+def plan_review(req_id):
+    requirement = Requirement.query.get_or_404(req_id)
+    if requirement.user_id != current_user.id and not current_user.is_admin:
+        flash('Unauthorized access')
+        return redirect(url_for('dashboard'))
+    form = FlaskForm()
+    return render_template('plan_review.html', requirement=requirement, form=form)
+
+@app.route('/requirement/<int:req_id>/delete')
+@login_required
+def delete_requirement(req_id):
+    requirement = Requirement.query.get_or_404(req_id)
+    if requirement.user_id != current_user.id and not current_user.is_admin:
+        flash('Unauthorized access')
+        return redirect(url_for('dashboard'))
+    
+    try:
+        Comment.query.filter_by(requirement_id=req_id).delete()
+        db.session.delete(requirement)
+        db.session.commit()
+        flash('Requirement deleted successfully')
+    except Exception as e:
+        db.session.rollback()
+        flash('Error deleting requirement')
+        app.logger.error(f"Error deleting requirement: {str(e)}")
+    
+    return redirect(url_for('dashboard'))
+
+@app.route('/plan/<int:req_id>/progress', methods=['POST'])
+@login_required
+def update_progress(req_id):
+    form = FlaskForm()
+    if form.validate_on_submit():
+        requirement = Requirement.query.get_or_404(req_id)
+        if requirement.user_id != current_user.id and not current_user.is_admin:
+            flash('Unauthorized access')
+            return redirect(url_for('dashboard'))
+        
+        phase_progress = {}
+        for phase in ['initial_setup', 'development', 'testing', 'deployment']:
+            progress = int(request.form.get(phase, 0))
+            phase_progress[phase] = progress
+        
+        requirement.phase_progress = phase_progress
+        requirement.overall_progress = sum(phase_progress.values()) // len(phase_progress)
+        requirement.last_updated = datetime.utcnow()
+        
+        if requirement.overall_progress == 100:
+            requirement.status = 'completed'
+        elif requirement.overall_progress > 0:
+            requirement.status = 'in_progress'
+        else:
+            requirement.status = 'pending'
+        
+        db.session.commit()
+        flash('Progress updated successfully')
+    else:
+        flash('Invalid form submission')
+    return redirect(url_for('plan_review', req_id=req_id))
+
+with app.app_context():
+    db.create_all()
+    
+    # Create initial admin user if none exists
+    admin = User.query.filter_by(username='admin').first()
+    if not admin:
+        admin = User(
+            username='admin',
+            email='admin@example.com',
+            password_hash=generate_password_hash('admin'),
+            is_admin=True
+        )
+        db.session.add(admin)
+        db.session.commit()
+    elif not admin.is_admin:  # Ensure existing admin user has admin privileges
+        admin.is_admin = True
+        admin.password_hash = generate_password_hash('admin')
+        db.session.commit()
+
+if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

@@ -3,16 +3,29 @@
 {% block content %}
 <div class="container">
     <div class="row justify-content-center mt-5">
-        <div class="col-md-6 text-center">
+        <div class="col-md-8 text-center">
             <h1 class="display-4 mb-4">Welcome to ERP Analyzer</h1>
             <p class="lead mb-5">Analyze and plan your ERP implementation requirements with AI-powered insights</p>
             
-            <div class="card">
-                <div class="card-body">
-                    <h3 class="card-title">User Access</h3>
-                    <p class="card-text">Submit and manage your ERP requirements</p>
-                    <a href="{{ url_for('login') }}" class="btn btn-primary me-2">Login</a>
-                    <a href="{{ url_for('register') }}" class="btn btn-secondary">Register</a>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h3 class="card-title">User Access</h3>
+                            <p class="card-text">Submit and manage your ERP requirements</p>
+                            <a href="{{ url_for('login') }}" class="btn btn-primary me-2">Login</a>
+                            <a href="{{ url_for('register') }}" class="btn btn-secondary">Register</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h3 class="card-title">Admin Access</h3>
+                            <p class="card-text">Manage users and system settings</p>
+                            <a href="{{ url_for('admin_login') }}" class="btn btn-info">Admin Login</a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
