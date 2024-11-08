@@ -27,7 +27,7 @@ app.config['WTF_CSRF_SSL_STRICT'] = False
 
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = 'login'
+login_manager.login_view = 'user_login'
 db.init_app(app)
 
 # Form classes
@@ -55,28 +55,10 @@ class RegistrationForm(FlaskForm):
     email = EmailField('Email', validators=[validators.DataRequired(), validators.Email()])
     password = PasswordField('Password', validators=[validators.DataRequired()])
 
-class RequirementForm(FlaskForm):
-    project_scope = TextAreaField('Project Scope', validators=[validators.DataRequired()])
-    customization_type = SelectField(
-        'Customization Type',
-        choices=[
-            ('new_module', 'New Module'),
-            ('workflow_adjustment', 'Workflow Adjustment'),
-            ('report_customization', 'Report Customization'),
-            ('integration', 'Third-party Integration')
-        ],
-        validators=[validators.DataRequired()]
-    )
-    modules_involved = StringField('Modules Involved', validators=[validators.DataRequired()])
-    functional_requirements = TextAreaField('Functional Requirements', validators=[validators.DataRequired()])
-    technical_constraints = TextAreaField('Technical Constraints')
-
-# Error Handlers
 @app.errorhandler(CSRFError)
 def handle_csrf_error(e):
     return make_response(render_template('error.html', message='CSRF token is missing or invalid'), 400)
 
-# Headers for iframe access
 @app.after_request
 def add_header(response):
     response.headers['X-Frame-Options'] = 'ALLOW-FROM *'
@@ -88,7 +70,7 @@ def admin_required(f):
     def decorated_function(*args, **kwargs):
         if not current_user.is_authenticated or not current_user.is_admin:
             flash('You need to be logged in as an admin to view this page.')
-            return redirect(url_for('admin'))
+            return redirect(url_for('admin_login'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -138,8 +120,8 @@ def register():
     
     return render_template('register.html', form=form)
 
-@app.route('/login', methods=['GET', 'POST'])
-def login():
+@app.route('/user/login', methods=['GET', 'POST'])
+def user_login():
     if current_user.is_authenticated:
         return redirect(url_for('dashboard'))
     
@@ -162,10 +144,7 @@ def admin_login():
         user = User.query.filter_by(username=form.username.data).first()
         if user and user.is_admin and check_password_hash(user.password_hash, form.password.data):
             login_user(user)
-            response = make_response(redirect(url_for('admin_dashboard')))
-            response.set_cookie('session', response.headers.get('Set-Cookie', '').split('=')[1].split(';')[0], 
-                              samesite='None', secure=True)
-            return response
+            return redirect(url_for('admin_dashboard'))
         flash('Invalid admin credentials')
     
     return render_template('admin/login.html', form=form)
@@ -191,7 +170,7 @@ def admin_reset_credentials():
     
     return render_template('admin/reset_credentials.html', form=form)
 
-@app.route('/admin_dashboard')
+@app.route('/admin/dashboard')
 @admin_required
 def admin_dashboard():
     users = User.query.all()
