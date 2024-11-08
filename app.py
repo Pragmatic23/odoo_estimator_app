@@ -1,8 +1,9 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, make_response
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf import FlaskForm, CSRFProtect
+from flask_wtf.csrf import CSRFError
 from wtforms import StringField, TextAreaField, SelectField, PasswordField, EmailField, validators
 from functools import wraps
 from requirements_analyzer import analyze_requirements
@@ -19,7 +20,11 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_pre_ping": True,
 }
 
+# CSRF Configuration
 csrf = CSRFProtect(app)
+app.config['WTF_CSRF_CHECK_DEFAULT'] = False
+app.config['WTF_CSRF_SSL_STRICT'] = False
+
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
@@ -61,6 +66,18 @@ class RequirementForm(FlaskForm):
     modules_involved = StringField('Modules Involved', validators=[validators.DataRequired()])
     functional_requirements = TextAreaField('Functional Requirements', validators=[validators.DataRequired()])
     technical_constraints = TextAreaField('Technical Constraints')
+
+# Error Handlers
+@app.errorhandler(CSRFError)
+def handle_csrf_error(e):
+    return make_response(render_template('error.html', message='CSRF token is missing or invalid'), 400)
+
+# Headers for iframe access
+@app.after_request
+def add_header(response):
+    response.headers['X-Frame-Options'] = 'ALLOW-FROM *'
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    return response
 
 def admin_required(f):
     @wraps(f)
@@ -111,10 +128,6 @@ def admin_reset_credentials():
         if len(form.new_password.data) < 6:
             flash('New password must be at least 6 characters long')
             return render_template('admin/reset_credentials.html', form=form)
-            
-        if form.new_password.data != form.confirm_password.data:
-            flash('New passwords do not match')
-            return render_template('admin/reset_credentials.html', form=form)
         
         try:
             current_user.password_hash = generate_password_hash(form.new_password.data)
@@ -144,13 +157,9 @@ def delete_user(user_id):
         flash('You cannot delete your own account')
         return redirect(url_for('admin_dashboard'))
     
-    # Delete user and their requirements
     try:
-        # Delete associated comments first
         Comment.query.filter_by(user_id=user.id).delete()
-        # Delete requirements
         Requirement.query.filter_by(user_id=user.id).delete()
-        # Delete user
         db.session.delete(user)
         db.session.commit()
         flash(f'User {user.username} has been deleted')
@@ -182,9 +191,16 @@ def register():
             password_hash=generate_password_hash(form.password.data)
         )
         db.session.add(user)
-        db.session.commit()
-        login_user(user)
-        return redirect(url_for('dashboard'))
+        try:
+            db.session.commit()
+            login_user(user)
+            return redirect(url_for('dashboard'))
+        except Exception as e:
+            db.session.rollback()
+            flash('Error creating account. Please try again.')
+            app.logger.error(f"Error creating user: {str(e)}")
+            return redirect(url_for('register'))
+            
     return render_template('register.html', form=form)
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -285,7 +301,6 @@ def delete_requirement(req_id):
         return redirect(url_for('dashboard'))
     
     try:
-        # Delete associated comments first
         Comment.query.filter_by(requirement_id=req_id).delete()
         db.session.delete(requirement)
         db.session.commit()
