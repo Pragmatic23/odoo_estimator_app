@@ -63,18 +63,18 @@ function handleFormSubmission(form) {
         
         if (isValid) {
             try {
-                // Show loading state if elements exist
                 if (spinner) spinner.classList.remove('d-none');
                 if (buttonText) buttonText.textContent = 'Processing...';
                 if (submitBtn) submitBtn.disabled = true;
                 
-                // Submit the form after a short delay to ensure UI updates
-                setTimeout(() => {
-                    form.submit();
-                }, 100);
-            } catch (error) {
-                console.error('Error updating button state:', error);
+                // Submit the form
                 form.submit();
+            } catch (error) {
+                console.error('Error submitting form:', error);
+                // Re-enable the button if there's an error
+                if (spinner) spinner.classList.add('d-none');
+                if (buttonText) buttonText.textContent = form.id === 'loginForm' ? 'Login' : 'Submit';
+                if (submitBtn) submitBtn.disabled = false;
             }
         } else {
             alert('Please fill in all required fields correctly');

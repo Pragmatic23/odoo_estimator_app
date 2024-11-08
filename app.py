@@ -125,10 +125,6 @@ def admin_reset_credentials():
             flash('Current password is incorrect')
             return render_template('admin/reset_credentials.html', form=form)
         
-        if len(form.new_password.data) < 6:
-            flash('New password must be at least 6 characters long')
-            return render_template('admin/reset_credentials.html', form=form)
-        
         try:
             current_user.password_hash = generate_password_hash(form.new_password.data)
             db.session.commit()
@@ -209,12 +205,13 @@ def login():
         return redirect(url_for('dashboard'))
         
     form = FlaskForm()
-    if form.validate_on_submit():
-        user = User.query.filter_by(email=request.form['email']).first()
-        if user and check_password_hash(user.password_hash, request.form['password']):
+    if request.method == 'POST':
+        user = User.query.filter_by(email=request.form.get('email')).first()
+        if user and check_password_hash(user.password_hash, request.form.get('password')):
             login_user(user)
-            return redirect(url_for('dashboard'))
-        flash('Invalid credentials')
+            next_page = request.args.get('next')
+            return redirect(next_page) if next_page else redirect(url_for('dashboard'))
+        flash('Invalid email or password')
     return render_template('login.html', form=form)
 
 @app.route('/logout')
