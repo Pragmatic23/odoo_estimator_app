@@ -116,7 +116,6 @@ def admin_login():
         user = User.query.filter_by(username=form.username.data).first()
         if user and user.is_admin and check_password_hash(user.password_hash, form.password.data):
             login_user(user)
-            flash('Successfully logged in as admin')
             return redirect(url_for('admin_dashboard'))
         flash('Invalid admin credentials')
     
