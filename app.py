@@ -47,6 +47,14 @@ class AdminCredentialsForm(FlaskForm):
         validators.EqualTo('new_password', message='Passwords must match')
     ])
 
+class RegistrationForm(FlaskForm):
+    username = StringField('Username', validators=[validators.DataRequired()])
+    email = EmailField('Email', validators=[validators.DataRequired(), validators.Email()])
+    password = PasswordField('Password', validators=[
+        validators.DataRequired(),
+        validators.Length(min=6, message="Password must be at least 6 characters long")
+    ])
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
@@ -59,6 +67,39 @@ def admin_required(f):
             return redirect(url_for('admin_login'))
         return f(*args, **kwargs)
     return decorated_function
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+        
+    form = RegistrationForm()
+    if form.validate_on_submit():
+        if User.query.filter_by(email=form.email.data).first():
+            flash('Email already registered')
+            return redirect(url_for('register'))
+            
+        if User.query.filter_by(username=form.username.data).first():
+            flash('Username already taken')
+            return redirect(url_for('register'))
+        
+        user = User(
+            username=form.username.data,
+            email=form.email.data,
+            password_hash=generate_password_hash(form.password.data)
+        )
+        db.session.add(user)
+        try:
+            db.session.commit()
+            login_user(user)
+            return redirect(url_for('dashboard'))
+        except Exception as e:
+            db.session.rollback()
+            flash('Error creating account. Please try again.')
+            app.logger.error(f"Error creating user: {str(e)}")
+            return redirect(url_for('register'))
+            
+    return render_template('register.html', form=form)
 
 @app.route('/admin/reset-credentials', methods=['GET', 'POST'])
 @admin_required
@@ -129,6 +170,12 @@ def index():
             return redirect(url_for('admin_dashboard'))
         return redirect(url_for('dashboard'))
     return render_template('welcome.html')
+
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    requirements = Requirement.query.filter_by(user_id=current_user.id).all()
+    return render_template('dashboard.html', requirements=requirements)
 
 @app.route('/logout')
 @login_required
