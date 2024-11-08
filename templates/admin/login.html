@@ -8,7 +8,7 @@
                 <h3 class="card-title">Admin Login</h3>
             </div>
             <div class="card-body">
-                <form method="POST" id="loginForm" action="{{ url_for('admin_login') }}" target="_top">
+                <form method="POST">
                     {{ form.csrf_token }}
                     <div class="mb-3">
                         <label for="username" class="form-label">Username</label>
@@ -18,11 +18,29 @@
                         <label for="password" class="form-label">Password</label>
                         <input type="password" class="form-control" id="password" name="password" required>
                     </div>
-                    <button type="submit" class="btn btn-primary">
-                        <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                        <span class="button-text">Login</span>
-                    </button>
+                    <button type="submit" class="btn btn-primary">Login</button>
                     <a href="{{ url_for('index') }}" class="btn btn-secondary">Back to Welcome</a>
+                    <button type="button" class="btn btn-warning" onclick="toggleResetForm()">Reset Credentials</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card mb-4 mt-4" id="resetForm" style="display: none;">
+            <div class="card-header">
+                <h3 class="card-title">Reset Admin Credentials</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('admin_login', reset=1) }}">
+                    {{ form.csrf_token }}
+                    <div class="mb-3">
+                        <label for="new_username" class="form-label">New Username</label>
+                        <input type="text" class="form-control" id="new_username" name="new_username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="new_password" class="form-label">New Password</label>
+                        <input type="password" class="form-control" id="new_password" name="new_password" required>
+                    </div>
+                    <button type="submit" class="btn btn-warning">Reset Credentials</button>
                 </form>
             </div>
         </div>
@@ -31,5 +49,12 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/form_handler.js') }}"></script>
+<script>
+function toggleResetForm() {
+    const resetForm = document.getElementById('resetForm');
+    if (resetForm) {
+        resetForm.style.display = resetForm.style.display === 'none' ? 'block' : 'none';
+    }
+}
+</script>
 {% endblock %}

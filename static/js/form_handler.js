@@ -1,17 +1,27 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Handle all form submissions
-    const forms = {
-        requirementForm: document.getElementById('requirementForm'),
-        registrationForm: document.getElementById('registrationForm'),
-        loginForm: document.getElementById('loginForm'),
-        resetCredentialsForm: document.getElementById('resetCredentialsForm')
-    };
+    // Handle requirement form submission
+    const requirementForm = document.getElementById('requirementForm');
+    if (requirementForm) {
+        handleFormSubmission(requirementForm);
+    }
     
-    Object.values(forms).forEach(form => {
-        if (form) {
-            handleFormSubmission(form);
-        }
-    });
+    // Handle registration form submission
+    const registrationForm = document.getElementById('registrationForm');
+    if (registrationForm) {
+        handleFormSubmission(registrationForm);
+    }
+    
+    // Handle login form submission
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        handleFormSubmission(loginForm);
+    }
+    
+    // Handle admin reset credentials form submission
+    const resetCredentialsForm = document.getElementById('resetCredentialsForm');
+    if (resetCredentialsForm) {
+        handleFormSubmission(resetCredentialsForm);
+    }
 });
 
 function handleFormSubmission(form) {
@@ -53,21 +63,18 @@ function handleFormSubmission(form) {
         
         if (isValid) {
             try {
+                // Show loading state if elements exist
                 if (spinner) spinner.classList.remove('d-none');
                 if (buttonText) buttonText.textContent = 'Processing...';
                 if (submitBtn) submitBtn.disabled = true;
                 
-                // Check if in iframe and handle accordingly
-                if (window !== window.top) {
-                    form.target = '_top';
-                }
-                
-                form.submit();
+                // Submit the form after a short delay to ensure UI updates
+                setTimeout(() => {
+                    form.submit();
+                }, 100);
             } catch (error) {
-                console.error('Error submitting form:', error);
-                if (spinner) spinner.classList.add('d-none');
-                if (buttonText) buttonText.textContent = form.id === 'loginForm' ? 'Login' : 'Submit';
-                if (submitBtn) submitBtn.disabled = false;
+                console.error('Error updating button state:', error);
+                form.submit();
             }
         } else {
             alert('Please fill in all required fields correctly');

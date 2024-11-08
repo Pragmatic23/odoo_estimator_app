@@ -1,9 +1,8 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, flash, make_response
+from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf import FlaskForm, CSRFProtect
-from flask_wtf.csrf import CSRFError
 from wtforms import StringField, TextAreaField, SelectField, PasswordField, EmailField, validators
 from functools import wraps
 from requirements_analyzer import analyze_requirements
@@ -20,11 +19,7 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_pre_ping": True,
 }
 
-# CSRF Configuration
 csrf = CSRFProtect(app)
-app.config['WTF_CSRF_CHECK_DEFAULT'] = False
-app.config['WTF_CSRF_SSL_STRICT'] = False
-
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
@@ -67,18 +62,6 @@ class RequirementForm(FlaskForm):
     functional_requirements = TextAreaField('Functional Requirements', validators=[validators.DataRequired()])
     technical_constraints = TextAreaField('Technical Constraints')
 
-# Error Handlers
-@app.errorhandler(CSRFError)
-def handle_csrf_error(e):
-    return make_response(render_template('error.html', message='CSRF token is missing or invalid'), 400)
-
-# Headers for iframe access
-@app.after_request
-def add_header(response):
-    response.headers['X-Frame-Options'] = 'ALLOW-FROM *'
-    response.headers['Access-Control-Allow-Origin'] = '*'
-    return response
-
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -110,11 +93,8 @@ def admin_login():
         user = User.query.filter_by(username=form.username.data).first()
         if user and user.is_admin and check_password_hash(user.password_hash, form.password.data):
             login_user(user)
-            # Add SameSite attribute for cookies in iframe context
-            response = make_response(redirect(url_for('admin_dashboard')))
-            response.set_cookie('session', response.headers.get('Set-Cookie', '').split('=')[1].split(';')[0], 
-                              samesite='None', secure=True)
-            return response
+            flash('Welcome Admin!')
+            return redirect(url_for('admin_dashboard'))
         flash('Invalid admin credentials')
     
     return render_template('admin/login.html', form=form)
@@ -126,6 +106,14 @@ def admin_reset_credentials():
     if form.validate_on_submit():
         if not check_password_hash(current_user.password_hash, form.current_password.data):
             flash('Current password is incorrect')
+            return render_template('admin/reset_credentials.html', form=form)
+        
+        if len(form.new_password.data) < 6:
+            flash('New password must be at least 6 characters long')
+            return render_template('admin/reset_credentials.html', form=form)
+            
+        if form.new_password.data != form.confirm_password.data:
+            flash('New passwords do not match')
             return render_template('admin/reset_credentials.html', form=form)
         
         try:
@@ -156,9 +144,13 @@ def delete_user(user_id):
         flash('You cannot delete your own account')
         return redirect(url_for('admin_dashboard'))
     
+    # Delete user and their requirements
     try:
+        # Delete associated comments first
         Comment.query.filter_by(user_id=user.id).delete()
+        # Delete requirements
         Requirement.query.filter_by(user_id=user.id).delete()
+        # Delete user
         db.session.delete(user)
         db.session.commit()
         flash(f'User {user.username} has been deleted')
@@ -190,16 +182,9 @@ def register():
             password_hash=generate_password_hash(form.password.data)
         )
         db.session.add(user)
-        try:
-            db.session.commit()
-            login_user(user)
-            return redirect(url_for('dashboard'))
-        except Exception as e:
-            db.session.rollback()
-            flash('Error creating account. Please try again.')
-            app.logger.error(f"Error creating user: {str(e)}")
-            return redirect(url_for('register'))
-            
+        db.session.commit()
+        login_user(user)
+        return redirect(url_for('dashboard'))
     return render_template('register.html', form=form)
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -208,13 +193,12 @@ def login():
         return redirect(url_for('dashboard'))
         
     form = FlaskForm()
-    if request.method == 'POST':
-        user = User.query.filter_by(email=request.form.get('email')).first()
-        if user and check_password_hash(user.password_hash, request.form.get('password')):
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=request.form['email']).first()
+        if user and check_password_hash(user.password_hash, request.form['password']):
             login_user(user)
-            next_page = request.args.get('next')
-            return redirect(next_page) if next_page else redirect(url_for('dashboard'))
-        flash('Invalid email or password')
+            return redirect(url_for('dashboard'))
+        flash('Invalid credentials')
     return render_template('login.html', form=form)
 
 @app.route('/logout')
@@ -301,6 +285,7 @@ def delete_requirement(req_id):
         return redirect(url_for('dashboard'))
     
     try:
+        # Delete associated comments first
         Comment.query.filter_by(requirement_id=req_id).delete()
         db.session.delete(requirement)
         db.session.commit()
