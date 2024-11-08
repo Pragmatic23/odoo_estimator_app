@@ -37,6 +37,11 @@
                             <span class="button-text">Login</span>
                         </button>
                         <a href="{{ url_for('index') }}" class="btn btn-secondary">Back to Welcome</a>
+                        <div class="card-body">
+                            <a href="{{ url_for('admin_reset_credentials') }}" class="btn btn-warning btn-lg w-100">
+                                Reset Admin Credentials
+                            </a>
+                        </div>
                     </div>
                 </form>
             </div>
