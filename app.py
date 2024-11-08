@@ -1,19 +1,29 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
-from flask_sqlalchemy import SQLAlchemy
+from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from sqlalchemy.orm import DeclarativeBase
+from flask_wtf import FlaskForm, CSRFProtect
+from wtforms import StringField, TextAreaField, SelectField, PasswordField, validators
+from functools import wraps
 from requirements_analyzer import analyze_requirements
 from plan_generator import generate_plan
 from analytics import analyze_modules, analyze_complexity, get_requirements_stats
 from datetime import datetime
-from flask_wtf import FlaskForm, CSRFProtect
-from wtforms import StringField, TextAreaField, SelectField, PasswordField, validators
-from functools import wraps
+from models import db, User, Requirement, Comment
 
-class Base(DeclarativeBase):
-    pass
+app = Flask(__name__)
+app.secret_key = os.environ.get("FLASK_SECRET_KEY") or "a secret key"
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+    "pool_recycle": 300,
+    "pool_pre_ping": True,
+}
+
+csrf = CSRFProtect(app)
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+db.init_app(app)
 
 class AdminLoginForm(FlaskForm):
     username = StringField('Username', validators=[validators.DataRequired()])
@@ -46,21 +56,6 @@ class RequirementForm(FlaskForm):
     functional_requirements = TextAreaField('Functional Requirements', validators=[validators.DataRequired()])
     technical_constraints = TextAreaField('Technical Constraints')
 
-db = SQLAlchemy(model_class=Base)
-app = Flask(__name__)
-app.secret_key = os.environ.get("FLASK_SECRET_KEY") or "a secret key"
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
-app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-    "pool_recycle": 300,
-    "pool_pre_ping": True,
-}
-
-csrf = CSRFProtect(app)
-login_manager = LoginManager()
-login_manager.init_app(app)
-login_manager.login_view = 'login'
-db.init_app(app)
-
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -72,7 +67,6 @@ def admin_required(f):
 
 @login_manager.user_loader
 def load_user(user_id):
-    from models import User
     return User.query.get(int(user_id))
 
 @app.route('/')
@@ -89,33 +83,13 @@ def admin_login():
         return redirect(url_for('admin_dashboard'))
     
     form = AdminLoginForm()
-    if request.method == 'POST':
-        from models import User
-        
-        # Handle credential reset
-        if request.args.get('reset'):
-            new_username = request.form.get('new_username')
-            new_password = request.form.get('new_password')
-            
-            if new_username and new_password:
-                admin = User.query.filter_by(is_admin=True).first()
-                if admin:
-                    admin.username = new_username
-                    admin.password_hash = generate_password_hash(new_password)
-                    db.session.commit()
-                    flash('Admin credentials updated successfully')
-                    return redirect(url_for('admin_login'))
-            flash('Invalid reset credentials')
-            return redirect(url_for('admin_login'))
-        
-        # Handle normal login
-        if form.validate_on_submit():
-            user = User.query.filter_by(username=form.username.data).first()
-            if user and user.is_admin and check_password_hash(user.password_hash, form.password.data):
-                login_user(user)
-                flash('Welcome Admin!')
-                return redirect(url_for('admin_dashboard'))
-            flash('Invalid admin credentials')
+    if form.validate_on_submit():
+        user = User.query.filter_by(username=form.username.data).first()
+        if user and user.is_admin and check_password_hash(user.password_hash, form.password.data):
+            login_user(user)
+            flash('Welcome Admin!')
+            return redirect(url_for('admin_dashboard'))
+        flash('Invalid admin credentials')
     
     return render_template('admin/login.html', form=form)
 
@@ -138,15 +112,12 @@ def admin_reset_credentials():
 @app.route('/admin_dashboard')
 @admin_required
 def admin_dashboard():
-    from models import User
     users = User.query.all()
-    form = FlaskForm()  # Create a form for CSRF token
-    return render_template('admin/dashboard.html', users=users, form=form)
+    return render_template('admin/dashboard.html', users=users)
 
 @app.route('/admin/user/<int:user_id>/delete')
 @admin_required
 def delete_user(user_id):
-    from models import User
     user = User.query.get_or_404(user_id)
     
     # Prevent admin from deleting themselves
@@ -166,47 +137,22 @@ def delete_user(user_id):
     
     return redirect(url_for('admin_dashboard'))
 
-@app.route('/admin/user/<int:user_id>/reset-password', methods=['POST'])
-@admin_required
-def reset_user_password(user_id):
-    from models import User
-    form = FlaskForm()
-    if form.validate_on_submit():
-        user = User.query.get_or_404(user_id)
-        new_password = request.form['new_password']
-        user.password_hash = generate_password_hash(new_password)
-        db.session.commit()
-        flash(f'Password reset for user {user.username}')
-    return redirect(url_for('admin_dashboard'))
-
-@app.route('/admin/user/<int:user_id>/toggle-admin')
-@admin_required
-def toggle_admin_status(user_id):
-    from models import User
-    user = User.query.get_or_404(user_id)
-    if user.id != current_user.id:  # Prevent admin from removing their own admin status
-        user.is_admin = not user.is_admin
-        db.session.commit()
-        flash(f'Admin status {"granted to" if user.is_admin else "removed from"} {user.username}')
-    else:
-        flash('You cannot modify your own admin status')
-    return redirect(url_for('admin_dashboard'))
-
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    from models import User
-    if request.method == 'POST':
+    form = FlaskForm()
+    if form.validate_on_submit():
         user = User.query.filter_by(email=request.form['email']).first()
         if user and check_password_hash(user.password_hash, request.form['password']):
             login_user(user)
             return redirect(url_for('dashboard'))
         flash('Invalid credentials')
-    return render_template('login.html')
+    return render_template('login.html', form=form)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    from models import User
-    if request.method == 'POST':
+    form = FlaskForm()
+    
+    if form.validate_on_submit():
         if User.query.filter_by(email=request.form['email']).first():
             flash('Email already registered')
             return redirect(url_for('register'))
@@ -220,25 +166,23 @@ def register():
         db.session.commit()
         login_user(user)
         return redirect(url_for('dashboard'))
-    return render_template('register.html')
+    return render_template('register.html', form=form)
 
 @app.route('/logout')
 @login_required
 def logout():
     logout_user()
-    return redirect(url_for('index'))  # Changed from 'login' to 'index'
+    return redirect(url_for('index'))
 
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    from models import Requirement
     requirements = Requirement.query.filter_by(user_id=current_user.id).all()
     return render_template('dashboard.html', requirements=requirements)
 
 @app.route('/analytics')
 @login_required
 def analytics():
-    from models import Requirement
     requirements = Requirement.query.all()
     
     module_stats = analyze_modules(requirements)
@@ -253,10 +197,8 @@ def analytics():
 @app.route('/requirement/new', methods=['GET', 'POST'])
 @login_required
 def new_requirement():
-    from models import Requirement
     form = RequirementForm()
-    
-    if request.method == 'POST' and form.validate_on_submit():
+    if form.validate_on_submit():
         try:
             requirement = Requirement(
                 user_id=current_user.id,
@@ -295,15 +237,13 @@ def new_requirement():
 @app.route('/plan/<int:req_id>')
 @login_required
 def plan_review(req_id):
-    from models import Requirement
     requirement = Requirement.query.get_or_404(req_id)
-    form = FlaskForm()  # Create a form for CSRF token
+    form = FlaskForm()
     return render_template('plan_review.html', requirement=requirement, form=form)
 
 @app.route('/requirement/<int:req_id>/delete')
 @login_required
 def delete_requirement(req_id):
-    from models import Requirement
     requirement = Requirement.query.get_or_404(req_id)
     if requirement.user_id != current_user.id:
         flash('Unauthorized access')
@@ -317,8 +257,7 @@ def delete_requirement(req_id):
 @app.route('/plan/<int:req_id>/progress', methods=['POST'])
 @login_required
 def update_progress(req_id):
-    from models import Requirement
-    form = FlaskForm()  # Create a form for CSRF
+    form = FlaskForm()
     if form.validate_on_submit():
         requirement = Requirement.query.get_or_404(req_id)
         if requirement.user_id != current_user.id:
@@ -348,11 +287,9 @@ def update_progress(req_id):
     return redirect(url_for('plan_review', req_id=req_id))
 
 with app.app_context():
-    import models
     db.create_all()
     
     # Create initial admin user if none exists
-    from models import User
     admin = User.query.filter_by(username='admin').first()
     if not admin:
         admin = User(
