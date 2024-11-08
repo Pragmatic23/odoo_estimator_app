@@ -31,11 +31,13 @@
                         <label for="password" class="form-label">Password</label>
                         <input type="password" class="form-control" id="password" name="password" required>
                     </div>
-                    <button type="submit" class="btn btn-primary">
-                        <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                        <span class="button-text">Login</span>
-                    </button>
-                    <a href="{{ url_for('index') }}" class="btn btn-secondary">Back to Welcome</a>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                            <span class="button-text">Login</span>
+                        </button>
+                        <a href="{{ url_for('index') }}" class="btn btn-secondary">Back to Welcome</a>
+                    </div>
                 </form>
             </div>
         </div>
