@@ -30,7 +30,6 @@ login_manager.init_app(app)
 login_manager.login_view = 'login'
 db.init_app(app)
 
-# Form classes
 class AdminLoginForm(FlaskForm):
     username = StringField('Username', validators=[validators.DataRequired()])
     password = PasswordField('Password', validators=[validators.DataRequired()])
@@ -116,10 +115,9 @@ def admin_login():
         user = User.query.filter_by(username=form.username.data).first()
         if user and user.is_admin and check_password_hash(user.password_hash, form.password.data):
             login_user(user)
-            # Add SameSite attribute for cookies in iframe context
             response = make_response(redirect(url_for('admin_dashboard')))
-            response.set_cookie('session', response.headers.get('Set-Cookie', '').split('=')[1].split(';')[0], 
-                              samesite='None', secure=True)
+            response.headers['X-Frame-Options'] = 'ALLOW-FROM *'
+            response.headers['Access-Control-Allow-Origin'] = '*'
             return response
         flash('Invalid admin credentials')
     
@@ -131,7 +129,7 @@ def admin_reset_credentials():
     form = AdminCredentialsForm()
     if form.validate_on_submit():
         if not check_password_hash(current_user.password_hash, form.current_password.data):
-            flash('Current password is incorrect')
+            flash('Current password is incorrect', 'error')
             return render_template('admin/reset_credentials.html', form=form)
         
         try:
@@ -157,7 +155,6 @@ def admin_dashboard():
 def delete_user(user_id):
     user = User.query.get_or_404(user_id)
     
-    # Prevent admin from deleting themselves
     if user.id == current_user.id:
         flash('You cannot delete your own account')
         return redirect(url_for('admin_dashboard'))
@@ -350,24 +347,23 @@ def update_progress(req_id):
         flash('Invalid form submission')
     return redirect(url_for('plan_review', req_id=req_id))
 
-with app.app_context():
-    db.create_all()
-    
-    # Create initial admin user if none exists
-    admin = User.query.filter_by(username='admin').first()
-    if not admin:
-        admin = User(
-            username='admin',
-            email='admin@example.com',
-            password_hash=generate_password_hash('admin'),
-            is_admin=True
-        )
-        db.session.add(admin)
-        db.session.commit()
-    elif not admin.is_admin:  # Ensure existing admin user has admin privileges
-        admin.is_admin = True
-        admin.password_hash = generate_password_hash('admin')
-        db.session.commit()
-
 if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
+        # Create initial admin user if none exists
+        admin = User.query.filter_by(username='admin').first()
+        if not admin:
+            admin = User(
+                username='admin',
+                email='admin@example.com',
+                password_hash=generate_password_hash('admin'),
+                is_admin=True
+            )
+            db.session.add(admin)
+            db.session.commit()
+        elif not admin.is_admin:  # Ensure existing admin user has admin privileges
+            admin.is_admin = True
+            admin.password_hash = generate_password_hash('admin')
+            db.session.commit()
+            
     app.run(host='0.0.0.0', port=5000, debug=True)
