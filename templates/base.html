@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ERP Requirements Analyzer</title>
+    <title>Odoo Requirements Analyzer</title>
     <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
         <div class="container">
-            <a class="navbar-brand" href="{{ url_for('index') }}">ERP Analyzer</a>
+            <a class="navbar-brand" href="{{ url_for('index') }}">Odoo App Estimator</a>
             {% if current_user.is_authenticated %}
             <div class="navbar-nav">
                 {% if not current_user.is_admin %}

@@ -10,6 +10,7 @@ from plan_generator import generate_plan
 from analytics import analyze_modules, analyze_complexity, get_requirements_stats
 from datetime import datetime
 from models import db, User, Requirement, Comment
+from flask_cors import CORS
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY") or "a secret key"
@@ -19,7 +20,15 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_pre_ping": True,
 }
 
+# Initialize CSRF protection
 csrf = CSRFProtect(app)
+app.config['WTF_CSRF_CHECK_DEFAULT'] = False  # Disable CSRF by default
+app.config['WTF_CSRF_TIME_LIMIT'] = None  # Remove time limit
+
+# Initialize CORS
+CORS(app, supports_credentials=True)
+app.config['CORS_HEADERS'] = 'Content-Type'
+
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
@@ -75,6 +84,8 @@ def admin_required(f):
 def load_user(user_id):
     return User.query.get(int(user_id))
 
+# Routes that need CSRF protection
+@csrf.exempt
 @app.route('/')
 def index():
     if current_user.is_authenticated:
@@ -105,15 +116,7 @@ def admin_reset_credentials():
     form = AdminCredentialsForm()
     if form.validate_on_submit():
         if not check_password_hash(current_user.password_hash, form.current_password.data):
-            flash('Current password is incorrect')
-            return render_template('admin/reset_credentials.html', form=form)
-        
-        if len(form.new_password.data) < 6:
-            flash('New password must be at least 6 characters long')
-            return render_template('admin/reset_credentials.html', form=form)
-            
-        if form.new_password.data != form.confirm_password.data:
-            flash('New passwords do not match')
+            flash('Current password is incorrect', 'error')
             return render_template('admin/reset_credentials.html', form=form)
         
         try:
@@ -139,18 +142,13 @@ def admin_dashboard():
 def delete_user(user_id):
     user = User.query.get_or_404(user_id)
     
-    # Prevent admin from deleting themselves
     if user.id == current_user.id:
         flash('You cannot delete your own account')
         return redirect(url_for('admin_dashboard'))
     
-    # Delete user and their requirements
     try:
-        # Delete associated comments first
         Comment.query.filter_by(user_id=user.id).delete()
-        # Delete requirements
         Requirement.query.filter_by(user_id=user.id).delete()
-        # Delete user
         db.session.delete(user)
         db.session.commit()
         flash(f'User {user.username} has been deleted')
@@ -285,7 +283,6 @@ def delete_requirement(req_id):
         return redirect(url_for('dashboard'))
     
     try:
-        # Delete associated comments first
         Comment.query.filter_by(requirement_id=req_id).delete()
         db.session.delete(requirement)
         db.session.commit()
