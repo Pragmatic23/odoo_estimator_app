@@ -100,6 +100,12 @@ def index():
         return redirect(url_for('dashboard'))
     return render_template('welcome.html')
 
+@app.route('/admin')
+def admin_welcome():
+    if current_user.is_authenticated and current_user.is_admin:
+        return redirect(url_for('admin_dashboard'))
+    return render_template('admin/welcome.html')
+
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     if current_user.is_authenticated and current_user.is_admin:
