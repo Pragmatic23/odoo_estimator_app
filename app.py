@@ -110,8 +110,11 @@ def admin_login():
         user = User.query.filter_by(username=form.username.data).first()
         if user and user.is_admin and check_password_hash(user.password_hash, form.password.data):
             login_user(user)
-            flash('Welcome Admin!')
-            return redirect(url_for('admin_dashboard'))
+            # Add SameSite attribute for cookies in iframe context
+            response = make_response(redirect(url_for('admin_dashboard')))
+            response.set_cookie('session', response.headers.get('Set-Cookie', '').split('=')[1].split(';')[0], 
+                              samesite='None', secure=True)
+            return response
         flash('Invalid admin credentials')
     
     return render_template('admin/login.html', form=form)

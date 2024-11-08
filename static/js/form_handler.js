@@ -1,27 +1,17 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Handle requirement form submission
-    const requirementForm = document.getElementById('requirementForm');
-    if (requirementForm) {
-        handleFormSubmission(requirementForm);
-    }
+    // Handle all form submissions
+    const forms = {
+        requirementForm: document.getElementById('requirementForm'),
+        registrationForm: document.getElementById('registrationForm'),
+        loginForm: document.getElementById('loginForm'),
+        resetCredentialsForm: document.getElementById('resetCredentialsForm')
+    };
     
-    // Handle registration form submission
-    const registrationForm = document.getElementById('registrationForm');
-    if (registrationForm) {
-        handleFormSubmission(registrationForm);
-    }
-    
-    // Handle login form submission
-    const loginForm = document.getElementById('loginForm');
-    if (loginForm) {
-        handleFormSubmission(loginForm);
-    }
-    
-    // Handle admin reset credentials form submission
-    const resetCredentialsForm = document.getElementById('resetCredentialsForm');
-    if (resetCredentialsForm) {
-        handleFormSubmission(resetCredentialsForm);
-    }
+    Object.values(forms).forEach(form => {
+        if (form) {
+            handleFormSubmission(form);
+        }
+    });
 });
 
 function handleFormSubmission(form) {
@@ -67,11 +57,14 @@ function handleFormSubmission(form) {
                 if (buttonText) buttonText.textContent = 'Processing...';
                 if (submitBtn) submitBtn.disabled = true;
                 
-                // Submit the form
+                // Check if in iframe and handle accordingly
+                if (window !== window.top) {
+                    form.target = '_top';
+                }
+                
                 form.submit();
             } catch (error) {
                 console.error('Error submitting form:', error);
-                // Re-enable the button if there's an error
                 if (spinner) spinner.classList.add('d-none');
                 if (buttonText) buttonText.textContent = form.id === 'loginForm' ? 'Login' : 'Submit';
                 if (submitBtn) submitBtn.disabled = false;
