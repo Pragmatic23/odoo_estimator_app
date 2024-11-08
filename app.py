@@ -25,9 +25,14 @@ csrf = CSRFProtect(app)
 app.config['WTF_CSRF_CHECK_DEFAULT'] = False  # Disable CSRF by default
 app.config['WTF_CSRF_TIME_LIMIT'] = None  # Remove time limit
 
-# Initialize CORS
-CORS(app, supports_credentials=True)
-app.config['CORS_HEADERS'] = 'Content-Type'
+# Update CORS configuration
+CORS(app, supports_credentials=True, resources={
+    r"/*": {
+        "origins": "*",
+        "allow_headers": ["Content-Type", "X-CSRF-Token"],
+        "supports_credentials": True
+    }
+})
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -194,7 +199,7 @@ def login():
     if current_user.is_authenticated:
         return redirect(url_for('dashboard'))
         
-    form = LoginForm()  # Use LoginForm instead of FlaskForm
+    form = LoginForm()
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
         if user and check_password_hash(user.password_hash, form.password.data):

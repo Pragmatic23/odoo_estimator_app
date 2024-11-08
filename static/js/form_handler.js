@@ -1,4 +1,24 @@
 document.addEventListener('DOMContentLoaded', function() {
+    // Handle login form submission
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const spinner = submitBtn?.querySelector('.spinner-border');
+            const buttonText = submitBtn?.querySelector('.button-text');
+            
+            // Show loading state
+            if (spinner) spinner.classList.remove('d-none');
+            if (buttonText) buttonText.textContent = 'Processing...';
+            if (submitBtn) submitBtn.disabled = true;
+            
+            // Submit form
+            this.submit();
+        });
+    }
+    
     // Handle requirement form submission
     const requirementForm = document.getElementById('requirementForm');
     if (requirementForm) {
@@ -11,12 +31,6 @@ document.addEventListener('DOMContentLoaded', function() {
         handleFormSubmission(registrationForm);
     }
     
-    // Handle login form submission
-    const loginForm = document.getElementById('loginForm');
-    if (loginForm) {
-        handleFormSubmission(loginForm);
-    }
-    
     // Handle admin reset credentials form submission
     const resetCredentialsForm = document.getElementById('resetCredentialsForm');
     if (resetCredentialsForm) {
@@ -25,7 +39,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function handleFormSubmission(form) {
-    if (!form) return;
+    if (!form || form.id === 'loginForm') return; // Skip login form as it's handled separately
 
     const submitBtn = form.querySelector('button[type="submit"]');
     if (!submitBtn) return;
